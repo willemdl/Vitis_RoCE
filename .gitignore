@@ -1,0 +1,15 @@
+# build folders
+build/
+build_*/
+tmp*/
+packaged_*/
+_x*/
+xgui/
+host/host
+
+# log files
+*.log
+*.jou
+
+# other folders
+bins/

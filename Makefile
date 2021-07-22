@@ -38,7 +38,11 @@ VITIS_PLATFORM := ${DEVICE}
 
 
 XCLBIN_NAME = network
-KRNL_1 := network_krnl
+ifeq ($(USER_KRNL_MODE), rocetest)
+  KRNL_1 := rocetest_krnl
+else
+  KRNL_1 := network_krnl
+endif
 KRNL_2 := ${USER_KRNL}
 KRNL_3 := cmac_krnl
 
@@ -69,7 +73,11 @@ CXXFLAGS += $(opencl_CXXFLAGS) -Wall -O0 -g -std=gnu++14
 CXXFLAGS +=  -DVITIS_PLATFORM=$(VITIS_PLATFORM)
 LDFLAGS += $(opencl_LDFLAGS)
 
-HOST_SRCS += host/${USER_KRNL}/host.cpp
+ifeq ($(USER_KRNL_MODE), rocetest)
+  HOST_SRCS += host/rocetest_krnl/host.cpp
+else
+  HOST_SRCS += host/${USER_KRNL}/host.cpp
+endif
 # Host compiler global settings
 CXXFLAGS += -fmessage-length=0
 LDFLAGS += -lrt -lstdc++
@@ -92,9 +100,15 @@ $(info $$DEVICE is [${DEVICE}])
 $(info $$POSTSYSLINKTCL is [${POSTSYSLINKTCL}])
 CLFLAGS += --advanced.param compiler.userPostSysLinkTcl=$(POSTSYSLINKTCL) #--xp param:compiler.userPostSysLinkTcl=$(POSTSYSLINKTCL)
 #CLFLAGS += --dk chipscope:network_krnl_1:m_axis_tcp_open_status --dk chipscope:network_krnl_1:s_axis_tcp_tx_meta --dk chipscope:network_krnl_1:s_axis_tcp_open_connection
-CLFLAGS += --config ./kernel/user_krnl/${USER_KRNL}/config_sp_${USER_KRNL}.txt
+ifeq ($(USER_KRNL_MODE), rocetest)
+  CLFLAGS += --config ./kernel/rocetest_krnl/config_host_kernel.txt
+else
+  CLFLAGS += --config ./kernel/user_krnl/${USER_KRNL}/config_sp_${USER_KRNL}.txt
+endif
 # CLFLAGS += --profile_kernel stall:${USER_KRNL}:all:all
 #endif
+CLFLAGS += --vivado.impl.strategies "Performance_Explore,Area_Explore"
+# CLFLAGS += --vivado.impl.strategies "All"
 
 # LDCLFLAGS += --kernel_frequency "0:250|1:250"
 # LDCLFLAGS += --profile_kernel stall:${USER_KRNL}:all:all
@@ -105,7 +119,11 @@ EMCONFIG_DIR = $(TEMP_DIR)
 EMU_DIR = $(SDCARD)/data/emulation
 
 BINARY_CONTAINERS += $(BUILD_DIR)/${XCLBIN_NAME}.xclbin
-BINARY_CONTAINER_OBJS += $(TEMP_DIR)/${KRNL_1}.xo $(TEMP_DIR)/${KRNL_2}.xo $(TEMP_DIR)/${KRNL_3}.xo 
+ifeq ($(USER_KRNL_MODE), rocetest)
+  BINARY_CONTAINER_OBJS += $(TEMP_DIR)/${KRNL_1}.xo $(TEMP_DIR)/${KRNL_3}.xo 
+else
+  BINARY_CONTAINER_OBJS += $(TEMP_DIR)/${KRNL_1}.xo $(TEMP_DIR)/${KRNL_2}.xo $(TEMP_DIR)/${KRNL_3}.xo 
+endif
 
 CP = cp -rf
 

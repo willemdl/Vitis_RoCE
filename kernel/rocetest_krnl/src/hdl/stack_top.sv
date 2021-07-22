@@ -224,7 +224,7 @@ end
 assign ap_idle = ap_idle_r;
 
 // Done logic
-localparam integer TIMER = 25000;
+localparam integer TIMER = 250000000;
 reg [31:0] run_counter;
 reg         ap_done_n;
 always @ (posedge net_clk ) begin

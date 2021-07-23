@@ -60,6 +60,9 @@ BUILD_DIR := ./build_dir.$(TARGET).$(XSA)
 
 VPP := $(XILINX_VITIS)/bin/v++
 SDCARD := sd_card
+VITIS_VERSION := $(shell echo $(XILINX_VITIS) | sed -nre 's/^[^0-9]*(([0-9]+\.)*[0-9]+).*/\1/p')
+$(info VITIS_VERSION is [${VITIS_VERSION}])
+
 
 #Include Libraries
 include $(ABS_COMMON_REPO)/common/includes/opencl/opencl.mk
@@ -107,8 +110,14 @@ else
 endif
 # CLFLAGS += --profile_kernel stall:${USER_KRNL}:all:all
 #endif
-CLFLAGS += --vivado.impl.strategies "Performance_Explore,Area_Explore"
-# CLFLAGS += --vivado.impl.strategies "All"
+
+ifeq ($(VITIS_VERSION), 2020.2)
+  CLFLAGS += --vivado.impl.strategies "Performance_Explore,Area_Explore"
+  # CLFLAGS += --vivado.impl.strategies "All"
+else
+  CLFLAGS += --vivado.prop run.impl_1.STEPS.PHYS_OPT_DESIGN.IS_ENABLED=true
+  CLFLAGS += --vivado.prop run.impl_1.STEPS.PHYS_OPT_DESIGN.ARGS.DIRECTIVE=Explore
+endif
 
 # LDCLFLAGS += --kernel_frequency "0:250|1:250"
 # LDCLFLAGS += --profile_kernel stall:${USER_KRNL}:all:all

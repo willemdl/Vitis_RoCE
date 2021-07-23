@@ -6,6 +6,8 @@ packaged_*/
 _x*/
 xgui/
 host/host
+scripts/post_sys_link.tcl
+kernel/common/types/network_types.svh
 
 # log files
 *.log

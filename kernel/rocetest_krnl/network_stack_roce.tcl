@@ -1,9 +1,9 @@
 
 # update ip catalog
-set __ip_list [get_property ip_repo_paths [current_project]]
-lappend __ip_list /home/tianlisong/bulk/thesis/fpga-network-stack/iprepo
-set_property ip_repo_paths $__ip_list [current_project]
-update_ip_catalog
+# set __ip_list [get_property ip_repo_paths [current_project]]
+# lappend __ip_list /home/tianlisong/bulk/thesis/fpga-network-stack/iprepo
+# set_property ip_repo_paths $__ip_list [current_project]
+# update_ip_catalog
 
 #IPs used in network_stack.sv
 

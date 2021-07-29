@@ -108,19 +108,19 @@ int main(int argc, char **argv) {
     
     wait_for_enter("\nPress ENTER to continue after setting up ILA trigger...");
 
-    uint32_t rPSN = 0x00aa1234;
-    uint32_t lPSN = 0x00bb4321;
-    uint32_t rQPN = 0xaaaaaaaa;
-    uint32_t lQPN = 0xbbbbbbbb;
-    uint32_t rIP  = 0x01010101;
-    uint32_t lIP  = 0x01010107;
+    uint32_t rPSN = 0x00000000;
+    uint32_t lPSN = 0x00002000;
+    uint32_t rQPN = 0x00000000;
+    uint32_t lQPN = 0x00001000;
+    uint32_t rIP  = 0x0b01d4d2;
+    uint32_t lIP  = 0x0b01d4d1;
     uint32_t rUDP = 0x000012b7;
-    uint64_t vAddr= 0x0000000000000010;
-    uint32_t rKey = 0xeeeeeeee;
-    uint32_t OP   = 0x00000001;
+    uint64_t vAddr= 0x0000000000000001;
+    uint32_t rKey = 0x00000000;
+    uint32_t OP   = 0x00000000;
     uint64_t rAddr= 0x0000000000000000;
     uint64_t lAddr= 0x0000000000000000;
-    uint32_t len  = 0x00000010;
+    uint32_t len  = 0x00000100;
     
     // Set network kernel arguments
     OCL_CHECK(err, err = network_kernel.setArg(0, rPSN)); // Default IP address

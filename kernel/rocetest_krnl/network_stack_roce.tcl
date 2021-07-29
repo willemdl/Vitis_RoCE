@@ -132,6 +132,9 @@ set_property -dict [list CONFIG.C_NUM_OF_PROBES {8} CONFIG.C_EN_STRG_QUAL {1} CO
 update_compile_order -fileset sources_1
 
 create_ip -name ila -vendor xilinx.com -library ip -version 6.2 -module_name ila_stack_top
-set_property -dict [list CONFIG.C_NUM_OF_PROBES {10} CONFIG.C_PROBE1_WIDTH {512} CONFIG.C_PROBE3_WIDTH {512} CONFIG.C_EN_STRG_QUAL {1} CONFIG.C_ADV_TRIGGER {true} CONFIG.C_INPUT_PIPE_STAGES {1}] [get_ips ila_stack_top]
+set_property -dict [list CONFIG.C_NUM_OF_PROBES {15} CONFIG.C_PROBE2_WIDTH {512} \
+CONFIG.C_PROBE5_WIDTH {512} CONFIG.C_PROBE8_WIDTH {160} CONFIG.C_PROBE9_WIDTH {32} \
+CONFIG.C_PROBE10_WIDTH {8} CONFIG.C_EN_STRG_QUAL {1} CONFIG.C_ADV_TRIGGER {true} \
+CONFIG.C_INPUT_PIPE_STAGES {1}] [get_ips ila_stack_top]
 update_compile_order -fileset sources_1
 

@@ -853,15 +853,21 @@ axis_interconnect_merger_160 tx_metadata_merger (
 ila_stack_top inst_ila_stack_top (
     .clk(net_clk),
     .probe0(m_axis_net.valid),
-    .probe1(m_axis_net.data),
-    .probe2(s_axis_net.valid),
-    .probe3(s_axis_net.data),
-    .probe4(axis_tx_metadata.valid),
-    .probe5(axis_tx_metadata.ready),
-    .probe6(m_axis_roce_read_cmd.valid),
-    .probe7(m_axis_roce_read_cmd.ready),
-    .probe8(m_axis_roce_write_cmd.valid),
-    .probe9(m_axis_roce_write_cmd.ready)
+    .probe1(m_axis_net.ready),
+    .probe2(m_axis_net.data),
+    .probe3(s_axis_net.valid),
+    .probe4(s_axis_net.ready),
+    .probe5(s_axis_net.data),
+    .probe6(axis_tx_metadata.valid),
+    .probe7(axis_tx_metadata.ready),
+    .probe8(axis_tx_metadata.data),//160
+    .probe9(run_counter),//32
+    .probe10(writeState),//8
+    .probe11(m_axis_roce_read_cmd.valid),
+    .probe12(m_axis_roce_read_cmd.ready),
+    .probe13(m_axis_roce_write_cmd.valid),
+    .probe14(m_axis_roce_write_cmd.ready)
+    
 );
 
 /*

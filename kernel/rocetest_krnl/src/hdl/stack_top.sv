@@ -156,6 +156,7 @@ reg[31:0]   ip_default_gateway;
 wire set_ip_addr_valid;
 reg[31:0] local_ip_address;
 wire[31:0]ip_address_used;
+wire [31:0] remote_ip_address;
 
 wire set_board_number_valid;
 wire[3:0] set_board_number_data;
@@ -267,17 +268,19 @@ assign ap_ready = ap_done;
 
 assign set_ip_addr_valid = ap_start_pulse;
 assign set_board_number_valid = ap_start_pulse;
-assign set_board_number_data = 0;
+// TODO: tmp use rKey 0-nothing, 1-test
+assign set_board_number_data = rKey[0];
 //assign axis_host_arp_lookup_request_TVALID = 0;
 // request ARP on start
 assign axis_host_arp_lookup_request_TVALID = ap_start_pulse;
 assign axis_host_arp_lookup_reply_TREADY = 1'b1;
-assign axis_host_arp_lookup_request_TDATA = rIP;
+assign axis_host_arp_lookup_request_TDATA = {rIP[7:0], rIP[15:8], rIP[23:16], rIP[31:24]};
 
 
 always @(posedge net_clk) begin
     if (~net_aresetn) begin
         local_ip_address <= 32'hD1D4010B;
+        remote_ip_address <= 32'hD2D4010B;
         board_number <= 0;
     end
     else begin
@@ -286,6 +289,10 @@ always @(posedge net_clk) begin
             local_ip_address[15:8] <= lIP[23:16];
             local_ip_address[23:16] <= lIP[15:8];
             local_ip_address[31:24] <= lIP[7:0];
+            remote_ip_address[7:0] <= rIP[31:24];
+            remote_ip_address[15:8] <= rIP[23:16];
+            remote_ip_address[23:16] <= rIP[15:8];
+            remote_ip_address[31:24] <= rIP[7:0];
         end
         if (set_board_number_valid) begin
             board_number <= set_board_number_data;
@@ -399,7 +406,7 @@ begin
                 axis_qp_conn_interface.valid <= 1'b0;
                 axis_host_tx_metadata.valid  <= 1'b0;
 
-                if (ap_start && !write_done) begin
+                if (ap_start) begin
                     wait_counter <= wait_counter + 1;
                     if (wait_counter == IDLE_TIMER) begin
                         writeState                      <= WRITE_QP1;
@@ -437,12 +444,12 @@ begin
                 axis_qp_conn_interface.data[15:0]       <= lQPN[15:0];
                 axis_qp_conn_interface.data[39:16]      <= rQPN[23:0];
                 axis_qp_conn_interface.data[135:40]     <= 0;
-//                axis_qp_conn_interface.data[167:136]    <= rIP[31:0];
-                axis_qp_conn_interface.data[167:136]    <= {rIP[7:0], rIP[15:8], rIP[23:16], rIP[31:24]};
+                axis_qp_conn_interface.data[167:136]    <= remote_ip_address;
                 axis_qp_conn_interface.data[183:168]    <= rUDP[15:0];
                 axis_qp_conn_interface.valid         <= 1'b1;
                 if (axis_qp_conn_interface.valid && axis_qp_conn_interface.ready) begin
                     axis_qp_conn_interface.valid        <= 1'b0;
+                    // TODO: tmp use rKey 0-nothing, 1-test
                     if (rKey[0] == 0) begin
                         write_done <= 1'b1;
                         writeState <= WRITE_IDLE;

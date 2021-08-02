@@ -156,7 +156,7 @@ reg[31:0]   ip_default_gateway;
 wire set_ip_addr_valid;
 reg[31:0] local_ip_address;
 wire[31:0]ip_address_used;
-wire [31:0] remote_ip_address;
+reg [31:0] remote_ip_address;
 
 wire set_board_number_valid;
 wire[3:0] set_board_number_data;

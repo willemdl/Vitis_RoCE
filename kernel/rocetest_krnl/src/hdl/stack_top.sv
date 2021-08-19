@@ -419,7 +419,7 @@ begin
                 axis_qp_interface.data[26:3]    <= rQPN[23:0];
                 axis_qp_interface.data[50:27]   <= rPSN[23:0];
                 axis_qp_interface.data[74:51]   <= lPSN[23:0];
-                axis_qp_interface.data[90:75]   <= rKey[15:0];
+                axis_qp_interface.data[90:75]   <= 0;//rKey[15:0];
                 axis_qp_interface.data[138:91]  <= vAddr[47:0]; //uint<48> vAddr
                 axis_qp_interface.valid         <= 1'b1;
                 if (axis_qp_interface.valid && axis_qp_interface.ready) begin
@@ -866,8 +866,31 @@ ila_stack_top inst_ila_stack_top (
     .probe11(m_axis_roce_read_cmd.valid),
     .probe12(m_axis_roce_read_cmd.ready),
     .probe13(m_axis_roce_write_cmd.valid),
-    .probe14(m_axis_roce_write_cmd.ready)
-    
+    .probe14(m_axis_roce_write_cmd.ready)    
+);
+
+ila_stack_top_inter inst_ila_stack_top_inter (
+    .clk(net_clk),
+    .probe0(axis_roce_slice_to_roce.valid),
+    .probe1(axis_roce_slice_to_roce.ready),
+    .probe2(axis_roce_slice_to_roce.data),
+    .probe3(axis_roce_to_roce_slice.valid),
+    .probe4(axis_roce_to_roce_slice.ready),
+    .probe5(axis_roce_to_roce_slice.data),
+    .probe6(axis_roce_slice_to_mie.valid),
+    .probe7(axis_roce_slice_to_mie.ready),
+    .probe8(axis_roce_slice_to_mie.data),
+    .probe9(run_counter),//32
+    .probe10(writeState),//8
+    .probe11(axis_mie_to_intercon.valid),
+    .probe12(axis_mie_to_intercon.ready),
+    .probe13(axis_mie_to_intercon.data),
+    .probe14(axis_iph_to_roce_slice.valid),
+    .probe15(axis_iph_to_roce_slice.ready),    
+    .probe16(axis_iph_to_roce_slice.data),
+    .probe17(axis_slice_to_ibh.valid),
+    .probe18(axis_slice_to_ibh.ready),    
+    .probe19(axis_slice_to_ibh.data)
 );
 
 /*

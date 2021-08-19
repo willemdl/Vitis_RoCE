@@ -92,6 +92,7 @@ endif
 # Kernel compiler global settings
 CLFLAGS += -t $(TARGET) --platform $(DEVICE) --save-temps #--config $(CONFIGLINKTCL)
 CLFLAGS += --kernel_frequency 250
+CLFLAGS += --user_ip_repo_paths $(IPREPOPATH)
 ifneq ($(TARGET), hw)
   CLFLAGS += -g
 endif
@@ -111,13 +112,13 @@ endif
 # CLFLAGS += --profile_kernel stall:${USER_KRNL}:all:all
 #endif
 
-ifeq ($(VITIS_VERSION), 2020.2)
-  CLFLAGS += --vivado.impl.strategies "Performance_Explore,Area_Explore"
-  # CLFLAGS += --vivado.impl.strategies "All"
-else
-  CLFLAGS += --vivado.prop run.impl_1.STEPS.PHYS_OPT_DESIGN.IS_ENABLED=true
-  CLFLAGS += --vivado.prop run.impl_1.STEPS.PHYS_OPT_DESIGN.ARGS.DIRECTIVE=Explore
-endif
+#ifeq ($(VITIS_VERSION), 2020.2)
+#  CLFLAGS += --vivado.impl.strategies "Performance_Explore,Area_Explore"
+#  # CLFLAGS += --vivado.impl.strategies "All"
+#else
+#  CLFLAGS += --vivado.prop run.impl_1.STEPS.PHYS_OPT_DESIGN.IS_ENABLED=true
+#  CLFLAGS += --vivado.prop run.impl_1.STEPS.PHYS_OPT_DESIGN.ARGS.DIRECTIVE=Explore
+#endif
 
 # LDCLFLAGS += --kernel_frequency "0:250|1:250"
 # LDCLFLAGS += --profile_kernel stall:${USER_KRNL}:all:all

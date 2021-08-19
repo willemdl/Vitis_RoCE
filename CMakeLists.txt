@@ -58,7 +58,7 @@ endif()
 #configure_file(${CMAKE_SOURCE_DIR}/scripts/package_scatter_krnl.tcl.in ${CMAKE_SOURCE_DIR}/scripts/package_scatter_krnl.tcl)
 #configure_file(${CMAKE_SOURCE_DIR}/scripts/package_iperf_krnl.tcl.in ${CMAKE_SOURCE_DIR}/scripts/package_iperf_krnl.tcl)
 
-configure_file(${CMAKE_SOURCE_DIR}/scripts/post_sys_link.tcl.in ${CMAKE_SOURCE_DIR}/scripts/post_sys_link.tcl)
+#configure_file(${CMAKE_SOURCE_DIR}/scripts/post_sys_link.tcl.in ${CMAKE_SOURCE_DIR}/scripts/post_sys_link.tcl)
 configure_file(${CMAKE_SOURCE_DIR}/kernel/common/types/network_types.svh.in ${CMAKE_SOURCE_DIR}/kernel/common/types/network_types.svh)
 
 #add_custom_target(shell COMMAND ${VIVADO_BINARY} -mode tcl -source ${CMAKE_BINARY_DIR}/shell.tcl)

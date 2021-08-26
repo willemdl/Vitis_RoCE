@@ -102,6 +102,12 @@ axi_stream #(.WIDTH(WIDTH))     axis_slice_to_ibh();
 axi_stream #(.WIDTH(WIDTH))     axis_iph_to_arp_slice();
 axi_stream #(.WIDTH(WIDTH))     axis_arp_slice_to_arp();
 axi_stream #(.WIDTH(WIDTH))     axis_arp_to_arp_slice();
+// Not usesd: ipv4, ipv6, tcp
+axi_stream #(.WIDTH(WIDTH))     axis_iph_to_icmp_slice();
+axi_stream #(.WIDTH(WIDTH))     axis_iph_to_icmpv6_slice();
+axi_stream #(.WIDTH(WIDTH))     axis_iph_to_toe_slice();
+axi_stream #(.WIDTH(WIDTH))     axis_iph_to_udp_slice();
+axi_stream #(.WIDTH(WIDTH))     axis_iph_to_rocev6_slice();
 // ROCE
 axi_stream #(.WIDTH(WIDTH))     axis_iph_to_roce_slice();
 axi_stream #(.WIDTH(WIDTH))     axis_roce_slice_to_roce();
@@ -643,35 +649,35 @@ ip_handler_ip ip_handler_inst (
 .m_axis_arp_TKEEP(axis_iph_to_arp_slice.keep), // output [7 : 0] AXI4Stream_M_TSTRB
 .m_axis_arp_TLAST(axis_iph_to_arp_slice.last), // output [0 : 0] AXI4Stream_M_TLAST
 
-.m_axis_icmp_TVALID(), // output AXI4Stream_M_TVALID
-.m_axis_icmp_TREADY(), // input AXI4Stream_M_TREADY
-.m_axis_icmp_TDATA(), // output [63 : 0] AXI4Stream_M_TDATA
-.m_axis_icmp_TKEEP(), // output [7 : 0] AXI4Stream_M_TSTRB
-.m_axis_icmp_TLAST(), // output [0 : 0] AXI4Stream_M_TLAST
+.m_axis_icmp_TVALID(axis_iph_to_icmp_slice.valid), // output AXI4Stream_M_TVALID
+.m_axis_icmp_TREADY(axis_iph_to_icmp_slice.ready), // input AXI4Stream_M_TREADY
+.m_axis_icmp_TDATA(axis_iph_to_icmp_slice.data), // output [63 : 0] AXI4Stream_M_TDATA
+.m_axis_icmp_TKEEP(axis_iph_to_icmp_slice.keep), // output [7 : 0] AXI4Stream_M_TSTRB
+.m_axis_icmp_TLAST(axis_iph_to_icmp_slice.last), // output [0 : 0] AXI4Stream_M_TLAST
 
-.m_axis_icmpv6_TVALID(),
-.m_axis_icmpv6_TREADY(),
-.m_axis_icmpv6_TDATA(),
-.m_axis_icmpv6_TKEEP(),
-.m_axis_icmpv6_TLAST(),
+.m_axis_icmpv6_TVALID(axis_iph_to_icmpv6_slice.valid),
+.m_axis_icmpv6_TREADY(axis_iph_to_icmpv6_slice.ready),
+.m_axis_icmpv6_TDATA(axis_iph_to_icmpv6_slice.data),
+.m_axis_icmpv6_TKEEP(axis_iph_to_icmpv6_slice.keep),
+.m_axis_icmpv6_TLAST(axis_iph_to_icmpv6_slice.last),
 
-.m_axis_ipv6udp_TVALID(),
-.m_axis_ipv6udp_TREADY(),
-.m_axis_ipv6udp_TDATA(), 
-.m_axis_ipv6udp_TKEEP(),
-.m_axis_ipv6udp_TLAST(),
+.m_axis_ipv6udp_TVALID(axis_iph_to_rocev6_slice.valid),
+.m_axis_ipv6udp_TREADY(axis_iph_to_rocev6_slice.ready),
+.m_axis_ipv6udp_TDATA(axis_iph_to_rocev6_slice.data), 
+.m_axis_ipv6udp_TKEEP(axis_iph_to_rocev6_slice.keep),
+.m_axis_ipv6udp_TLAST(axis_iph_to_rocev6_slice.last),
 
-.m_axis_udp_TVALID(),
-.m_axis_udp_TREADY(),
-.m_axis_udp_TDATA(),
-.m_axis_udp_TKEEP(),
-.m_axis_udp_TLAST(),
+.m_axis_udp_TVALID(axis_iph_to_udp_slice.valid),
+.m_axis_udp_TREADY(axis_iph_to_udp_slice.ready),
+.m_axis_udp_TDATA(axis_iph_to_udp_slice.data),
+.m_axis_udp_TKEEP(axis_iph_to_udp_slice.keep),
+.m_axis_udp_TLAST(axis_iph_to_udp_slice.last),
 
-.m_axis_tcp_TVALID(),
-.m_axis_tcp_TREADY(),
-.m_axis_tcp_TDATA(),
-.m_axis_tcp_TKEEP(),
-.m_axis_tcp_TLAST(),
+.m_axis_tcp_TVALID(axis_iph_to_toe_slice.valid),
+.m_axis_tcp_TREADY(axis_iph_to_toe_slice.ready),
+.m_axis_tcp_TDATA(axis_iph_to_toe_slice.data),
+.m_axis_tcp_TKEEP(axis_iph_to_toe_slice.keep),
+.m_axis_tcp_TLAST(axis_iph_to_toe_slice.last),
 
 .m_axis_roce_TVALID(axis_iph_to_roce_slice.valid),
 .m_axis_roce_TREADY(axis_iph_to_roce_slice.ready),
@@ -823,6 +829,11 @@ register_slice_wrapper #(.WIDTH(WIDTH)) axis_register_roce_out_slice(
 .m_axis(axis_roce_slice_to_mie)
 );
 
+assign axis_iph_to_icmp_slice.ready = 1'b1;
+assign axis_iph_to_icmpv6_slice.ready = 1'b1;
+assign axis_iph_to_rocev6_slice.ready = 1'b1;
+assign axis_iph_to_udp_slice.ready = 1'b1;
+assign axis_iph_to_toe_slice.ready = 1'b1;
 
 axis_interconnect_merger_160 tx_metadata_merger (
   .ACLK(net_clk),                                  // input wire ACLK
@@ -890,7 +901,13 @@ ila_stack_top_inter inst_ila_stack_top_inter (
     .probe16(axis_iph_to_roce_slice.data),
     .probe17(axis_slice_to_ibh.valid),
     .probe18(axis_slice_to_ibh.ready),    
-    .probe19(axis_slice_to_ibh.data)
+    .probe19(axis_slice_to_ibh.data),
+    .probe20(roce_rx_pkg_counter),//32
+    .probe21(roce_tx_pkg_counter),//32
+    .probe22(regCrcDropPkgCount),//32
+    .probe23(regCrcDropPkgCount_valid),
+    .probe24(regInvalidPsnDropCount),//32
+    .probe25(regInvalidPsnDropCount_valid)
 );
 
 /*

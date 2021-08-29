@@ -1,0 +1,15 @@
+[connectivity]
+nk=cmac_krnl:1:cmac_krnl_1
+nk=rocetest_krnl:1:rocetest_krnl_1
+nk=roce_dummy_krnl:1:roce_dummy_krnl_1
+
+slr=cmac_krnl_1:SLR2
+
+sp=rocetest_krnl_1.m00_axi:HBM[30]
+
+sc=cmac_krnl_1.axis_net_rx:rocetest_krnl_1.s_axis_net_rx
+sc=rocetest_krnl_1.m_axis_net_tx:cmac_krnl_1.axis_net_tx
+
+sc=roce_dummy_krnl_1.m_axis_tx_meta:rocetest_krnl_1.s_axis_role_tx_meta
+sc=roce_dummy_krnl_1.m_axis_tx_data:rocetest_krnl_1.s_axis_role_tx_data
+sc=rocetest_krnl_1.m_axis_role_tx_status:roce_dummy_krnl_1.s_axis_tx_status

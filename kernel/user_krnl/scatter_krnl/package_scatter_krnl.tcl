@@ -65,7 +65,6 @@ create_project -force $projName $path_to_tmp_project -part $projPart
 
 add_files -norecurse [glob $path_to_hdl/hdl/*.v $path_to_hdl/hdl/*.sv $path_to_hdl/hdl/*.svh ]
 add_files -norecurse [glob $path_to_common/types/*.v $path_to_common/types/*.sv $path_to_common/types/*.svh ]
-#add_files -norecurse [glob $path_to_common/*.v $path_to_common/*.sv $path_to_common/hdl/*.v $path_to_common/hdl/*.sv]
 
 set_property top scatter_krnl [current_fileset]
 update_compile_order -fileset sources_1

@@ -46,6 +46,7 @@ module roce_host_control_s_axi
     output wire [63:0]                   rAddr,
     output wire [63:0]                   lAddr,
     output wire [31:0]                   len,
+    output wire [31:0]                   debug,
     output wire [63:0]                   mem_ptr
 );
 //------------------------Address Info-------------------
@@ -112,11 +113,14 @@ module roce_host_control_s_axi
 // 0x7c : Data signal of len
 //        bit 31~0 - len[31:0] (Read/Write)
 // 0x80 : reserved
-// 0x84 : Data signal of mem_ptr
+// 0x84 : Data signal of debug
+//        bit 31~0 - debug[31:0] (Read/Write)
+// 0x88 : reserved
+// 0x8c : Data signal of mem_ptr
 //        bit 31~0 - mem_ptr[31:0] (Read/Write)
-// 0x88 : Data signal of mem_ptr
+// 0x90 : Data signal of mem_ptr
 //        bit 31~0 - mem_ptr[63:32] (Read/Write)
-// 0x8c : reserved
+// 0x94 : reserved
 // (SC = Self Clear, COR = Clear on Read, TOW = Toggle on Write, COH = Clear on Handshake)
 
 //------------------------Parameter----------------------
@@ -154,9 +158,11 @@ localparam
     ADDR_LADDR_CTRL     = 8'h78,
     ADDR_LEN_DATA_0     = 8'h7c,
     ADDR_LEN_CTRL       = 8'h80,
-    ADDR_MEM_PTR_DATA_0 = 8'h84,
-    ADDR_MEM_PTR_DATA_1 = 8'h88,
-    ADDR_MEM_PTR_CTRL   = 8'h8c,
+    ADDR_DEBUG_DATA_0   = 8'h84,
+    ADDR_DEBUG_CTRL     = 8'h88,
+    ADDR_MEM_PTR_DATA_0 = 8'h8c,
+    ADDR_MEM_PTR_DATA_1 = 8'h90,
+    ADDR_MEM_PTR_CTRL   = 8'h94,
     WRIDLE              = 2'd0,
     WRDATA              = 2'd1,
     WRRESP              = 2'd2,
@@ -200,6 +206,7 @@ localparam
     reg  [63:0]                   int_rAddr = 'b0;
     reg  [63:0]                   int_lAddr = 'b0;
     reg  [31:0]                   int_len = 'b0;
+    reg  [31:0]                   int_debug = 'b0;
     reg  [63:0]                   int_mem_ptr = 'b0;
 
 //------------------------Instantiation------------------
@@ -356,6 +363,9 @@ always @(posedge ACLK) begin
                 ADDR_LEN_DATA_0: begin
                     rdata <= int_len[31:0];
                 end
+                ADDR_DEBUG_DATA_0: begin
+                    rdata <= int_debug[31:0];
+                end
                 ADDR_MEM_PTR_DATA_0: begin
                     rdata <= int_mem_ptr[31:0];
                 end
@@ -384,6 +394,7 @@ assign OP        = int_OP;
 assign rAddr     = int_rAddr;
 assign lAddr     = int_lAddr;
 assign len       = int_len;
+assign debug     = int_debug;
 assign mem_ptr   = int_mem_ptr;
 // int_ap_start
 always @(posedge ACLK) begin
@@ -638,6 +649,16 @@ always @(posedge ACLK) begin
     else if (ACLK_EN) begin
         if (w_hs && waddr == ADDR_LEN_DATA_0)
             int_len[31:0] <= (WDATA[31:0] & wmask) | (int_len[31:0] & ~wmask);
+    end
+end
+
+// int_debug[31:0]
+always @(posedge ACLK) begin
+    if (ARESET)
+        int_debug[31:0] <= 0;
+    else if (ACLK_EN) begin
+        if (w_hs && waddr == ADDR_DEBUG_DATA_0)
+            int_debug[31:0] <= (WDATA[31:0] & wmask) | (int_debug[31:0] & ~wmask);
     end
 end
 

@@ -57,6 +57,11 @@ module stack_top #(
     axi_stream.slave        s_axis_roce_read_data,
     axi_stream.rmaster      m_axis_roce_write_data,
 
+    // RoCE application interface
+    axis_meta.slave               s_axis_roce_role_tx_meta   ,
+    axi_stream.slave              s_axis_roce_role_tx_data   ,
+    axi_stream.master             m_axis_roce_role_tx_status ,
+
     // Control Signals
     input  wire                                  ap_start         ,
     output wire                                  ap_idle          ,
@@ -74,13 +79,8 @@ module stack_top #(
     input  wire [32-1:0]                         OP               ,
     input  wire [64-1:0]                         rAddr            ,
     input  wire [64-1:0]                         lAddr            ,
-    input  wire [32-1:0]                         len              
-
-    //Role Interface
-    // // TODO: control by kernel
-    // axis_meta.slave         s_axis_roce_role_tx_meta,
-    // axi_stream.slave        s_axis_roce_role_tx_data
-
+    input  wire [32-1:0]                         len              ,
+    input  wire [32-1:0]                         debug            
     
  );
 
@@ -274,8 +274,8 @@ assign ap_ready = ap_done;
 
 assign set_ip_addr_valid = ap_start_pulse;
 assign set_board_number_valid = ap_start_pulse;
-// TODO: tmp use rKey 0-nothing, 1-test
-assign set_board_number_data = rKey[0];
+// NOTE: use debug[0] as flag 0-nothing, 1-test
+assign set_board_number_data = debug[0];
 //assign axis_host_arp_lookup_request_TVALID = 0;
 // request ARP on start
 assign axis_host_arp_lookup_request_TVALID = ap_start_pulse;
@@ -425,7 +425,7 @@ begin
                 axis_qp_interface.data[26:3]    <= rQPN[23:0];
                 axis_qp_interface.data[50:27]   <= rPSN[23:0];
                 axis_qp_interface.data[74:51]   <= lPSN[23:0];
-                axis_qp_interface.data[90:75]   <= 0;//rKey[15:0];
+                axis_qp_interface.data[90:75]   <= rKey[15:0];
                 axis_qp_interface.data[138:91]  <= vAddr[47:0]; //uint<48> vAddr
                 axis_qp_interface.valid         <= 1'b1;
                 if (axis_qp_interface.valid && axis_qp_interface.ready) begin
@@ -455,8 +455,8 @@ begin
                 axis_qp_conn_interface.valid         <= 1'b1;
                 if (axis_qp_conn_interface.valid && axis_qp_conn_interface.ready) begin
                     axis_qp_conn_interface.valid        <= 1'b0;
-                    // TODO: tmp use rKey 0-nothing, 1-test
-                    if (rKey[0] == 0) begin
+                    // NOTE: use debug[0] as flag 0-nothing, 1-test
+                    if (debug[0] == 0) begin
                         write_done <= 1'b1;
                         writeState <= WRITE_IDLE;
                     end else begin
@@ -583,9 +583,6 @@ end
  * RoCEv2
  */
 
-axi_stream #(.WIDTH(WIDTH))       s_axis_roce_role_tx_data();
-assign s_axis_roce_role_tx_data.valid = 1'b0;
-
 roce_stack #(
     .ROCE_EN(ROCE_EN),
     .WIDTH(WIDTH)
@@ -596,7 +593,7 @@ roce_stack #(
     .s_axis_rx_data(axis_roce_slice_to_roce),
     //TX
     .s_axis_tx_meta(axis_tx_metadata),
-    .s_axis_tx_data(s_axis_roce_role_tx_data), //TODO: role tx data
+    .s_axis_tx_data(s_axis_roce_role_tx_data), 
 
 `ifndef ENABLE_DROP 
     .m_axis_tx_data(axis_roce_to_roce_slice),
@@ -829,11 +826,16 @@ register_slice_wrapper #(.WIDTH(WIDTH)) axis_register_roce_out_slice(
 .m_axis(axis_roce_slice_to_mie)
 );
 
+// assert unused ports to avoid open connection
 assign axis_iph_to_icmp_slice.ready = 1'b1;
 assign axis_iph_to_icmpv6_slice.ready = 1'b1;
 assign axis_iph_to_rocev6_slice.ready = 1'b1;
 assign axis_iph_to_udp_slice.ready = 1'b1;
 assign axis_iph_to_toe_slice.ready = 1'b1;
+
+// not used for now
+assign m_axis_roce_role_tx_status.ready = 1'b0;
+
 
 axis_interconnect_merger_160 tx_metadata_merger (
   .ACLK(net_clk),                                  // input wire ACLK
@@ -845,10 +847,9 @@ axis_interconnect_merger_160 tx_metadata_merger (
   .S00_AXIS_TDATA(axis_host_tx_metadata.data),              // input wire [159 : 0] S00_AXIS_TDATA
   .S01_AXIS_ACLK(net_clk),                // input wire S01_AXIS_ACLK
   .S01_AXIS_ARESETN(net_aresetn),          // input wire S01_AXIS_ARESETN
-  //TODO: role tx meta
-  .S01_AXIS_TVALID(0),//s_axis_roce_role_tx_meta.valid),            // input wire S01_AXIS_TVALID
-  .S01_AXIS_TREADY(),//s_axis_roce_role_tx_meta.ready),            // output wire S01_AXIS_TREADY
-  .S01_AXIS_TDATA(),//s_axis_roce_role_tx_meta.data),              // input wire [159 : 0] S01_AXIS_TDATA
+  .S01_AXIS_TVALID(s_axis_roce_role_tx_meta.valid),            // input wire S01_AXIS_TVALID
+  .S01_AXIS_TREADY(s_axis_roce_role_tx_meta.ready),            // output wire S01_AXIS_TREADY
+  .S01_AXIS_TDATA(s_axis_roce_role_tx_meta.data),              // input wire [159 : 0] S01_AXIS_TDATA
   .M00_AXIS_ACLK(net_clk),                // input wire M00_AXIS_ACLK
   .M00_AXIS_ARESETN(net_aresetn),          // input wire M00_AXIS_ARESETN
   .M00_AXIS_TVALID(axis_tx_metadata.valid),            // output wire M00_AXIS_TVALID

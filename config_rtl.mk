@@ -1,9 +1,9 @@
 VIVADO := $(XILINX_VIVADO)/bin/vivado
-$(TEMP_DIR)/${KRNL_1}.xo: kernel/network_krnl/network_krnl.xml kernel/network_krnl/package_network_krnl.tcl scripts/gen_xo.tcl kernel/network_krnl/src/hdl/*.sv
+$(TEMP_DIR)/${KRNL_1}.xo: kernel/${KRNL_1}/${KRNL_1}.xml kernel/${KRNL_1}/package_${KRNL_1}.tcl scripts/gen_xo.tcl kernel/${KRNL_1}/src/hdl/*.sv kernel/${KRNL_1}/src/hdl/*.v
 	mkdir -p $(TEMP_DIR)
-	$(VIVADO) -mode batch -source scripts/gen_xo.tcl -tclargs $(TEMP_DIR)/${KRNL_1}.xo ${KRNL_1} $(TARGET) $(DEVICE) $(XSA) kernel/network_krnl/network_krnl.xml kernel/network_krnl/package_network_krnl.tcl
+	$(VIVADO) -mode batch -source scripts/gen_xo.tcl -tclargs $(TEMP_DIR)/${KRNL_1}.xo ${KRNL_1} $(TARGET) $(DEVICE) $(XSA) kernel/${KRNL_1}/${KRNL_1}.xml kernel/${KRNL_1}/package_${KRNL_1}.tcl
 
-$(TEMP_DIR)/${KRNL_2}.xo: kernel/user_krnl/${KRNL_2}/${KRNL_2}.xml kernel/user_krnl/${KRNL_2}/package_${KRNL_2}.tcl scripts/gen_xo.tcl kernel/user_krnl/${KRNL_2}/src/hdl/*.sv
+$(TEMP_DIR)/${KRNL_2}.xo: kernel/user_krnl/${KRNL_2}/${KRNL_2}.xml kernel/user_krnl/${KRNL_2}/package_${KRNL_2}.tcl scripts/gen_xo.tcl kernel/user_krnl/${KRNL_2}/src/hdl/*.sv kernel/user_krnl/${KRNL_2}/src/hdl/*.v
 	mkdir -p $(TEMP_DIR)
 	$(VIVADO) -mode batch -source scripts/gen_xo.tcl -tclargs $(TEMP_DIR)/${KRNL_2}.xo ${KRNL_2} $(TARGET) $(DEVICE) $(XSA) kernel/user_krnl/${KRNL_2}/${KRNL_2}.xml kernel/user_krnl/${KRNL_2}/package_${KRNL_2}.tcl
 

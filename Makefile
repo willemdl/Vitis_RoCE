@@ -2,7 +2,7 @@
 
 help::
 	$(ECHO) "Makefile Usage:"
-	$(ECHO) "  make all TARGET=<sw_emu/hw_emu/hw> DEVICE=<FPGA platform> HOST_ARCH=<aarch32/aarch64/x86> SYSROOT=<sysroot_path> USER_KRNL=<user_krnl_name> USER_KRNL_MODE=<rtl/hls>"
+	$(ECHO) "  make all TARGET=<sw_emu/hw_emu/hw> DEVICE=<FPGA platform> HOST_ARCH=<aarch32/aarch64/x86> SYSROOT=<sysroot_path> NET_KRNL=<network_krnl_name> USER_KRNL=<user_krnl_name> USER_KRNL_MODE=<rtl/hls> EXE_NUM=<1/2>"
 	$(ECHO) "      Command to generate the design for specified Target and Shell."
 	$(ECHO) "      By default, HOST_ARCH=x86. HOST_ARCH and SYSROOT is required for SoC shells"
 	$(ECHO) ""
@@ -36,9 +36,21 @@ SYSROOT :=
 DEVICE ?= xilinx_u280_xdma_201920_3
 VITIS_PLATFORM := ${DEVICE}
 
-
 XCLBIN_NAME = network
-ifeq ($(USER_KRNL_MODE), rocetest)
+
+EXE_NUM ?= 1
+USER_KRNL_MODE ?= rtl
+NET_KRNL ?= roce
+USER_KRNL ?= roce_dummy_krnl
+$(info INFO: PARAMETER LIST)
+$(info INFO: TARGET is [${TARGET}])
+$(info INFO: DEVICE is [${DEVICE}])
+$(info INFO: NET_KRNL is [${NET_KRNL}])
+$(info INFO: USER_KRNL is [${USER_KRNL}])
+$(info INFO: USER_KRNL_MODE is [${USER_KRNL_MODE}])
+$(info INFO: EXE_NUM is [${EXE_NUM}])
+
+ifeq ($(NET_KRNL), roce)
   KRNL_1 := rocetest_krnl
 else
   KRNL_1 := network_krnl
@@ -46,7 +58,11 @@ endif
 KRNL_2 := ${USER_KRNL}
 KRNL_3 := cmac_krnl
 
-USER_KRNL_MODE ?= rtl
+$(info INFO: KERNEL LIST)
+$(info INFO: KRNL_1 is [${KRNL_1}])
+$(info INFO: KRNL_2 is [${KRNL_2}])
+$(info INFO: KRNL_3 is [${KRNL_3}])
+
 
 include ./utils.mk
 POSTSYSLINKTCL ?= $(shell readlink -f ./scripts/post_sys_link.tcl)
@@ -61,7 +77,7 @@ BUILD_DIR := ./build_dir.$(TARGET).$(XSA)
 VPP := $(XILINX_VITIS)/bin/v++
 SDCARD := sd_card
 VITIS_VERSION := $(shell echo $(XILINX_VITIS) | sed -nre 's/^[^0-9]*(([0-9]+\.)*[0-9]+).*/\1/p')
-$(info VITIS_VERSION is [${VITIS_VERSION}])
+$(info INFO: VITIS_VERSION is [${VITIS_VERSION}])
 
 
 #Include Libraries
@@ -76,11 +92,12 @@ CXXFLAGS += $(opencl_CXXFLAGS) -Wall -O0 -g -std=gnu++14
 CXXFLAGS +=  -DVITIS_PLATFORM=$(VITIS_PLATFORM)
 LDFLAGS += $(opencl_LDFLAGS)
 
-ifeq ($(USER_KRNL_MODE), rocetest)
-  HOST_SRCS += host/rocetest_krnl/host.cpp
+ifeq ($(NET_KRNL), roce)
+  HOST_SRCS += host/${USER_KRNL}/host$(EXE_NUM).cpp
 else
   HOST_SRCS += host/${USER_KRNL}/host.cpp
 endif
+
 # Host compiler global settings
 CXXFLAGS += -fmessage-length=0
 LDFLAGS += -lrt -lstdc++
@@ -99,16 +116,10 @@ endif
 
 # Linker params
 # Linker userPostSysLinkTcl param
-#ifeq ($(DEVICE),$(findstring $(DEVICE), u280))
-$(info $$DEVICE is [${DEVICE}])
-$(info $$POSTSYSLINKTCL is [${POSTSYSLINKTCL}])
-CLFLAGS += --advanced.param compiler.userPostSysLinkTcl=$(POSTSYSLINKTCL) #--xp param:compiler.userPostSysLinkTcl=$(POSTSYSLINKTCL)
+$(info INFO: $$POSTSYSLINKTCL is [${POSTSYSLINKTCL}])
+CLFLAGS += --advanced.param compiler.userPostSysLinkOverlayTcl=$(POSTSYSLINKTCL) #--xp param:compiler.userPostSysLinkTcl=$(POSTSYSLINKTCL)
 #CLFLAGS += --dk chipscope:network_krnl_1:m_axis_tcp_open_status --dk chipscope:network_krnl_1:s_axis_tcp_tx_meta --dk chipscope:network_krnl_1:s_axis_tcp_open_connection
-ifeq ($(USER_KRNL_MODE), rocetest)
-  CLFLAGS += --config ./kernel/rocetest_krnl/config_host_kernel.txt
-else
-  CLFLAGS += --config ./kernel/user_krnl/${USER_KRNL}/config_sp_${USER_KRNL}.txt
-endif
+CLFLAGS += --config ./kernel/user_krnl/${USER_KRNL}/config_sp_${USER_KRNL}.txt
 # CLFLAGS += --profile_kernel stall:${USER_KRNL}:all:all
 #endif
 
@@ -123,17 +134,18 @@ endif
 # LDCLFLAGS += --kernel_frequency "0:250|1:250"
 # LDCLFLAGS += --profile_kernel stall:${USER_KRNL}:all:all
 
-EXECUTABLE = ./host/host
+ifeq ($(NET_KRNL), roce)
+  EXECUTABLE = ./host/host$(EXE_NUM)
+else
+  EXECUTABLE = ./host/host
+endif
+
 CMD_ARGS = $(BUILD_DIR)/${XCLBIN_NAME}.xclbin
 EMCONFIG_DIR = $(TEMP_DIR)
 EMU_DIR = $(SDCARD)/data/emulation
 
 BINARY_CONTAINERS += $(BUILD_DIR)/${XCLBIN_NAME}.xclbin
-ifeq ($(USER_KRNL_MODE), rocetest)
-  BINARY_CONTAINER_OBJS += $(TEMP_DIR)/${KRNL_1}.xo $(TEMP_DIR)/${KRNL_3}.xo 
-else
-  BINARY_CONTAINER_OBJS += $(TEMP_DIR)/${KRNL_1}.xo $(TEMP_DIR)/${KRNL_2}.xo $(TEMP_DIR)/${KRNL_3}.xo 
-endif
+BINARY_CONTAINER_OBJS += $(TEMP_DIR)/${KRNL_1}.xo $(TEMP_DIR)/${KRNL_2}.xo $(TEMP_DIR)/${KRNL_3}.xo 
 
 CP = cp -rf
 

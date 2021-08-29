@@ -45,11 +45,11 @@
 # PART OF THIS FILE AT ALL TIMES.
 # 
 # *******************************************************************************/
-set path_to_hdl "./kernel/rocetest_krnl/src"
+set path_to_hdl "./kernel/user_krnl/roce_dummy_krnl/src"
 set path_to_packaged "./packaged_kernel_${suffix}"
 set path_to_tmp_project "./tmp_kernel_pack_${suffix}"
 set path_to_common "./kernel/common"
-set path_to_pack_tcl "./kernel/rocetest_krnl"
+set path_to_pack_tcl "./kernel/user_krnl/roce_dummy_krnl"
 
 set words [split $device "_"]
 set board [lindex $words 1]
@@ -66,7 +66,6 @@ create_project -force $projName $path_to_tmp_project -part $projPart
 
 add_files -norecurse [glob $path_to_hdl/hdl/*.v $path_to_hdl/hdl/*.sv $path_to_hdl/hdl/*.svh ]
 add_files -norecurse [glob $path_to_common/types/*.v $path_to_common/types/*.sv $path_to_common/types/*.svh ]
-#add_files -norecurse [glob /home/zhenhao/vitis_network/build/fpga-network-stack/hls/toe/toe_prj/solution1/impl/ip/hdl/verilog/*.v]
 
 set_property top network_krnl [current_fileset]
 update_compile_order -fileset sources_1
@@ -75,8 +74,6 @@ set __ip_list [get_property ip_repo_paths [current_project]]
 lappend __ip_list ./build/fpga-network-stack/iprepo
 set_property ip_repo_paths $__ip_list [current_project]
 update_ip_catalog
-
-source $path_to_pack_tcl/network_stack_roce.tcl
 
 
 update_compile_order -fileset sources_1
@@ -102,20 +99,21 @@ set_property physical_name ap_clk [ipx::get_port_maps CLK -of_objects [ipx::get_
 
 ipx::associate_bus_interfaces -busif s_axi_control -clock ap_clk [ipx::current_core]
 
-#TCP memory bank interface
-ipx::associate_bus_interfaces -busif m00_axi -clock ap_clk [ipx::current_core]
+# roce interfaces
+ipx::add_bus_interface m_axis_tx_meta [ipx::current_core]
+set_property interface_mode master [ipx::get_bus_interfaces m_axis_tx_meta -of_objects [ipx::current_core]]
+set_property abstraction_type_vlnv xilinx.com:interface:axis_rtl:1.0 [ipx::get_bus_interfaces m_axis_tx_meta -of_objects [ipx::current_core]]
+ipx::associate_bus_interfaces -busif m_axis_tx_meta -clock ap_clk [ipx::current_core]
 
+ipx::add_bus_interface m_axis_tx_data [ipx::current_core]
+set_property interface_mode master [ipx::get_bus_interfaces m_axis_tx_data -of_objects [ipx::current_core]]
+set_property abstraction_type_vlnv xilinx.com:interface:axis_rtl:1.0 [ipx::get_bus_interfaces m_axis_tx_data -of_objects [ipx::current_core]]
+ipx::associate_bus_interfaces -busif m_axis_tx_data -clock ap_clk [ipx::current_core]
 
-# cmac interfaces
-ipx::add_bus_interface m_axis_net_tx [ipx::current_core]
-set_property interface_mode master [ipx::get_bus_interfaces m_axis_net_tx -of_objects [ipx::current_core]]
-set_property abstraction_type_vlnv xilinx.com:interface:axis_rtl:1.0 [ipx::get_bus_interfaces m_axis_net_tx -of_objects [ipx::current_core]]
-ipx::associate_bus_interfaces -busif m_axis_net_tx -clock ap_clk [ipx::current_core]
-
-ipx::add_bus_interface s_axis_net_rx [ipx::current_core]
-set_property interface_mode slave [ipx::get_bus_interfaces s_axis_net_rx -of_objects [ipx::current_core]]
-set_property abstraction_type_vlnv xilinx.com:interface:axis_rtl:1.0 [ipx::get_bus_interfaces s_axis_net_rx -of_objects [ipx::current_core]]
-ipx::associate_bus_interfaces -busif s_axis_net_rx -clock ap_clk [ipx::current_core]
+ipx::add_bus_interface s_axis_tx_status [ipx::current_core]
+set_property interface_mode slave [ipx::get_bus_interfaces s_axis_tx_status -of_objects [ipx::current_core]]
+set_property abstraction_type_vlnv xilinx.com:interface:axis_rtl:1.0 [ipx::get_bus_interfaces s_axis_tx_status -of_objects [ipx::current_core]]
+ipx::associate_bus_interfaces -busif s_axis_tx_status -clock ap_clk [ipx::current_core]
 
 
 set_property xpm_libraries {XPM_CDC XPM_MEMORY XPM_FIFO} [ipx::current_core]

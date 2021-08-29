@@ -5,7 +5,7 @@ tmp*/
 packaged_*/
 _x*/
 xgui/
-host/host
+host/host*
 kernel/common/types/network_types.svh
 
 # log files

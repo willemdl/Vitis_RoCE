@@ -94,7 +94,7 @@ int main(int argc, char **argv) {
             OCL_CHECK(err,
                       network_kernel = cl::Kernel(program, "rocetest_krnl", &err));
             OCL_CHECK(err,
-                      user_kernel = cl::Kernel(program, "roce_dummy_krnl", &err));
+                      user_kernel = cl::Kernel(program, "roce_read_krnl", &err));
             valid_device++;
             break; // we break because we found a valid device
         }
@@ -124,7 +124,10 @@ int main(int argc, char **argv) {
     // [1:0]  mode 0-nothing 1-test 2-op   0
     uint32_t debug= 0x00001004;
 
-    uint32_t debug1= 0x00000000;
+    // [31:29] run time in second  b001     1s
+    // [28:24] len in 2^           b01010   2^10=1kB
+    // [23:0]  lQPN                0x000000
+    uint32_t debug1= 0x2a000000;
     
     // Set network kernel arguments
     OCL_CHECK(err, err = network_kernel.setArg(0, rPSN)); // Default IP address

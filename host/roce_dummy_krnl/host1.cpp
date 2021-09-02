@@ -92,7 +92,7 @@ int main(int argc, char **argv) {
         } else {
             std::cout << "Device[" << i << "]: program successful!\n";
             OCL_CHECK(err,
-                      network_kernel = cl::Kernel(program, "roce_host", &err));
+                      network_kernel = cl::Kernel(program, "rocetest_krnl", &err));
             OCL_CHECK(err,
                       user_kernel = cl::Kernel(program, "roce_dummy_krnl", &err));
             valid_device++;
@@ -119,7 +119,10 @@ int main(int argc, char **argv) {
     uint64_t rAddr= 0x0000000000000000;
     uint64_t lAddr= 0x0000000000000000;
     uint32_t len  = 0x00000100;
-    uint32_t debug= 0x00000000;
+    // [15:4] time interval in cycle       0x100   256cycle
+    // [3:2]  board number                 0
+    // [1:0]  mode 0-nothing 1-test 2-op   0
+    uint32_t debug= 0x00001000;
 
     uint32_t debug1= 0x00000000;
     

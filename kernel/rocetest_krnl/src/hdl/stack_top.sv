@@ -231,7 +231,7 @@ end
 assign ap_idle = ap_idle_r;
 
 // Done logic
-localparam [31:0] TIMER = 3750000000;
+localparam [31:0] TIMER = 3750000000; //15s
 reg [31:0] run_counter;
 reg         ap_done_n;
 always @ (posedge net_clk ) begin
@@ -274,14 +274,8 @@ assign ap_ready = ap_done;
 
 assign set_ip_addr_valid = ap_start_pulse;
 assign set_board_number_valid = ap_start_pulse;
-// NOTE: use debug[0] as flag 0-nothing, 1-test
-assign set_board_number_data = debug[0];
-//assign axis_host_arp_lookup_request_TVALID = 0;
-// request ARP on start
-assign axis_host_arp_lookup_request_TVALID = ap_start_pulse;
-assign axis_host_arp_lookup_reply_TREADY = 1'b1;
-assign axis_host_arp_lookup_request_TDATA = {rIP[7:0], rIP[15:8], rIP[23:16], rIP[31:24]};
-
+// NOTE: use debug[3:2] as board number
+assign set_board_number_data = {2'b0, debug[3:2]};
 
 always @(posedge net_clk) begin
     if (~net_aresetn) begin
@@ -340,44 +334,23 @@ end
 assign ip_address_used = iph_ip_address;
 
 
+// request ARP on start
+assign axis_host_arp_lookup_request_TVALID = ap_start_pulse;
+assign axis_host_arp_lookup_reply_TREADY = 1'b1;
+assign axis_host_arp_lookup_request_TDATA = {rIP[7:0], rIP[15:8], rIP[23:16], rIP[31:24]};
+
 /*
+ * STATE MACHINE for
  * qp interface 
  * conn interface
+ * tx meta
  */
-logic qp_valid          = 1'b0;
-logic qp_valid_r        = 1'b0;
-logic qp_written        = 1'b0;
-logic conn_valid        = 1'b0;
-logic conn_valid_r      = 1'b0;
-logic conn_written      = 1'b0;
-logic host_meta_valid   = 1'b0;
-logic host_meta_valid_r = 1'b0;
-logic host_meta_valid_rr = 1'b0;
-logic host_meta_written = 1'b0;
-// create valid pulse
-//always @(posedge net_clk) begin
-//    if (~net_aresetn) begin
-//        qp_valid_r          <= 1'b0;
-//        conn_valid_r        <= 1'b0;
-//        host_meta_valid_r   <= 1'b0;
-//        host_meta_valid_rr   <= 1'b0;
-//    end
-//    else begin
-//        qp_valid_r          <= qp_valid;
-//        conn_valid_r        <= conn_valid;
-//        host_meta_valid_r   <= host_meta_valid;
-//        host_meta_valid_rr   <= host_meta_valid_r;
-//    end
-//end
-//assign axis_qp_interface.valid = qp_valid & ~qp_valid_r;
-//assign axis_qp_conn_interface.valid = conn_valid & ~conn_valid_r;
-//assign axis_host_tx_metadata.valid = host_meta_valid & ~host_meta_valid_rr;
 
 // write qp_interface, qp_conn_interface and tx_meta from host sw
-//WRITE states
+// WRITE states
 reg[7:0] writeState;
 localparam WRITE_IDLE = 0;
-localparam WRITE_QP1 = 1;
+localparam WRITE_QP = 1;
 localparam WRITE_QP2 = 2;
 localparam WRITE_CONN = 3;
 localparam WRITE_CONN2 = 6;
@@ -386,8 +359,16 @@ localparam WRITE_META_READ = 7;
 localparam WRITE_META_READ_2 = 8;
 localparam WRITE_META_WRITE = 9;
 localparam WRITE_ARP_REQ = 5;
-localparam IDLE_TIMER = 2500000000; //10s
+localparam IDLE_TIMER = 250000000; //1s wait initialization
 localparam INTERVAL_TIMER = 1000; //4us
+// kernel MODE
+// 0 - do nothing
+// 1 - read-write-read test
+// 2 - run OPcode command
+localparam MODE_NO = 0;
+localparam MODE_RWR = 1;
+localparam MODE_OP = 2;
+
 reg[0:0] write_done;
 reg[31:0] wait_counter = 0;
 
@@ -402,7 +383,7 @@ begin
         axis_host_tx_metadata.data  <= 0;
         wait_counter <= 0;
 
-        write_done <= 0;
+        write_done <= 0; //TODO: currently not used, should used to avoid rewrite contexts
         writeState <= WRITE_IDLE;
     end
     else begin
@@ -412,15 +393,15 @@ begin
                 axis_qp_conn_interface.valid <= 1'b0;
                 axis_host_tx_metadata.valid  <= 1'b0;
 
-                if (ap_start) begin
+                if (ap_start && !write_done) begin
                     wait_counter <= wait_counter + 1;
                     if (wait_counter == IDLE_TIMER) begin
-                        writeState                      <= WRITE_QP1;
+                        writeState                      <= WRITE_QP;
                         wait_counter <= 0;
                     end
                 end
             end
-            WRITE_QP1: begin // qp 1
+            WRITE_QP: begin // qp 1
                 axis_qp_interface.data[2:0]     <= 3'b010; // 2 READY_RECV
                 axis_qp_interface.data[26:3]    <= rQPN[23:0];
                 axis_qp_interface.data[50:27]   <= rPSN[23:0];
@@ -433,19 +414,6 @@ begin
                     writeState                  <= WRITE_CONN;
                 end
             end
-            // WRITE_QP2: begin // qp 2
-            //     axis_qp_interface.data[2:0]     <= 3'b010; // 2 READY_RECV
-            //     axis_qp_interface.data[26:3]    <= lQPN[23:0];
-            //     axis_qp_interface.data[50:27]   <= lPSN[23:0];
-            //     axis_qp_interface.data[74:51]   <= rPSN[23:0];
-            //     axis_qp_interface.data[90:75]   <= rKey[15:0];
-            //     axis_qp_interface.data[138:91]  <= vAddr[47:0]; //uint<48> vAddr
-            //     axis_qp_interface.valid         <= 1'b1;
-            //     if (axis_qp_interface.valid && axis_qp_interface.ready) begin
-            //         axis_qp_interface.valid     <= 1'b0;
-            //         writeState                  <= WRITE_CONN;
-            //     end
-            // end
             WRITE_CONN: begin
                 axis_qp_conn_interface.data[15:0]       <= lQPN[15:0];
                 axis_qp_conn_interface.data[39:16]      <= rQPN[23:0];
@@ -455,70 +423,40 @@ begin
                 axis_qp_conn_interface.valid         <= 1'b1;
                 if (axis_qp_conn_interface.valid && axis_qp_conn_interface.ready) begin
                     axis_qp_conn_interface.valid        <= 1'b0;
-                    // NOTE: use debug[0] as flag 0-nothing, 1-test
-                    if (debug[0] == 0) begin
+                    // NOTE: use debug[1:0] as kernel mode
+                    if (debug[1:0] == 2'b00) begin
+                        // 00 - nothing
                         write_done <= 1'b1;
                         writeState <= WRITE_IDLE;
-                    end else begin
-                        writeState                          <= WRITE_META_READ; //TODO to WRITE_META?
+                    end else if (debug[1:0] == 2'b01) begin
+                        // 01 - read-write test
+                        writeState <= WRITE_META_READ;
+                    end else if (debug[1:0] == 2'b10) begin
+                        // 10 - run OPcode
+                        writeState <= WRITE_META;
                     end
                 end
             end
-            // WRITE_CONN2: begin
-            //     axis_qp_conn_interface.data[15:0]       <= rQPN[15:0];
-            //     axis_qp_conn_interface.data[39:16]      <= lQPN[23:0];
-            //     axis_qp_conn_interface.data[135:40]     <= 0;
-            //     axis_qp_conn_interface.data[167:136]    <= rIP[31:0];
-            //     // axis_qp_conn_interface.data[167:136]    <= {rIP[7:0], rIP[15:8], rIP[23:16], rIP[31:24]};
-            //     axis_qp_conn_interface.data[183:168]    <= rUDP[15:0];
-            //     axis_qp_conn_interface.valid         <= 1'b1;
-            //     if (axis_qp_conn_interface.valid && axis_qp_conn_interface.ready) begin
-            //         axis_qp_conn_interface.valid        <= 1'b0;
-            //         // writeState                          <= WRITE_ARP_REQ;
-            //         writeState                      <= WRITE_META_READ;
-            //     end
-            // end
-//            WRITE_ARP_REQ: begin
-//                if (wait_counter == 0) begin
-//                    axis_host_tx_metadata.data[2:0]     <= OP[2:0];
-//    //                axis_host_tx_metadata.data[6:3]     <= lQPN[3:0]; //TODO: check local/remote qpn
-//    //                axis_host_tx_metadata.data[26:7]    <= 0; // only use 4 LSB
-//                    axis_host_tx_metadata.data[26:3]     <= lQPN[23:0];
-//                    axis_host_tx_metadata.data[74:27]   <= lAddr[47:0];
-//                    axis_host_tx_metadata.data[122:75]  <= rAddr[47:0];
-//                    axis_host_tx_metadata.data[154:123] <= len[31:0];
-//                    axis_host_tx_metadata.valid         <= 1'b1;
-                    
-//                end
-//                if (axis_host_tx_metadata.valid && axis_host_tx_metadata.ready) begin
-//                    axis_host_tx_metadata.valid     <= 1'b0;
-//                end
-//                wait_counter <= wait_counter + 1;
-//                if (wait_counter == 100) begin
-//                    writeState                      <= WRITE_META;
-//                    wait_counter <= 0;
-//                end
-//            end
+            // MODE OP
             WRITE_META: begin
                 axis_host_tx_metadata.data[2:0]     <= OP[2:0];
-//                axis_host_tx_metadata.data[6:3]     <= lQPN[3:0]; //TODO: check local/remote qpn -> should be local qpn
-//                axis_host_tx_metadata.data[26:7]    <= 0; // only use 4 LSB
-                axis_host_tx_metadata.data[26:3]     <= lQPN[23:0];
-                axis_host_tx_metadata.data[74:27]   <= 48'h000000000002;//c2105fc001a1;//lAddr[47:0];
-                axis_host_tx_metadata.data[122:75]  <= 48'h000000000000;//rAddr[47:0];
+                axis_host_tx_metadata.data[26:3]    <= lQPN[23:0];
+                axis_host_tx_metadata.data[74:27]   <= lAddr[47:0];
+                axis_host_tx_metadata.data[122:75]  <= rAddr[47:0];
                 axis_host_tx_metadata.data[154:123] <= len[31:0];
                 axis_host_tx_metadata.valid         <= 1'b1;
                 if (axis_host_tx_metadata.valid && axis_host_tx_metadata.ready) begin
                     axis_host_tx_metadata.valid     <= 1'b0;
-                    writeState                      <= WRITE_META_READ;
+                    writeState                      <= WRITE_IDLE;
                     write_done                      <= 1;
                 end
             end
+            // MODE test
             WRITE_META_READ: begin
                 if (wait_counter == 0) begin
                     axis_host_tx_metadata.data[2:0]     <= 0; // RDMA READ
-                    axis_host_tx_metadata.data[26:3]     <= lQPN[23:0];
-                    axis_host_tx_metadata.data[74:27]   <= 48'h000000000000;//c2105fc001a1;//lAddr[47:0];
+                    axis_host_tx_metadata.data[26:3]    <= lQPN[23:0];
+                    axis_host_tx_metadata.data[74:27]   <= 48'h000000000000;//lAddr[47:0];
                     axis_host_tx_metadata.data[122:75]  <= 48'h000000000000;//rAddr[47:0];
                     axis_host_tx_metadata.data[154:123] <= len[31:0];
                     axis_host_tx_metadata.valid         <= 1'b1;
@@ -526,8 +464,9 @@ begin
                 if (axis_host_tx_metadata.valid && axis_host_tx_metadata.ready) begin
                     axis_host_tx_metadata.valid     <= 1'b0;
                 end
+                // TODO: optimize this wait logic, count only after valid&ready handshake
                 wait_counter <= wait_counter + 1;
-                if (wait_counter == INTERVAL_TIMER) begin
+                if (wait_counter[11:0] == debug[15:4]) begin
                     writeState                      <= WRITE_META_WRITE;
                     wait_counter <= 0;
                 end
@@ -535,8 +474,8 @@ begin
             WRITE_META_WRITE: begin
                 if (wait_counter == 0) begin
                     axis_host_tx_metadata.data[2:0]     <= 2'b01; // RDMA WRITE
-                    axis_host_tx_metadata.data[26:3]     <= lQPN[23:0];
-                    axis_host_tx_metadata.data[74:27]   <= 48'h000000000010;//c2105fc001a1;//lAddr[47:0];
+                    axis_host_tx_metadata.data[26:3]    <= lQPN[23:0];
+                    axis_host_tx_metadata.data[74:27]   <= 48'h000000000200;//lAddr[47:0];
                     axis_host_tx_metadata.data[122:75]  <= 48'h000000000000;//rAddr[47:0];
                     axis_host_tx_metadata.data[154:123] <= len[31:0];
                     axis_host_tx_metadata.valid         <= 1'b1;
@@ -545,7 +484,7 @@ begin
                     axis_host_tx_metadata.valid     <= 1'b0;
                 end
                 wait_counter <= wait_counter + 1;
-                if (wait_counter == INTERVAL_TIMER) begin
+                if (wait_counter[11:0] == debug[15:4]) begin
                     writeState                      <= WRITE_META_READ_2;
                     wait_counter <= 0;
                 end
@@ -553,8 +492,8 @@ begin
             WRITE_META_READ_2: begin
                 if (wait_counter == 0) begin
                     axis_host_tx_metadata.data[2:0]     <= 0; // RDMA READ
-                    axis_host_tx_metadata.data[26:3]     <= lQPN[23:0];
-                    axis_host_tx_metadata.data[74:27]   <= 48'h000000000000;//c2105fc001a1;//lAddr[47:0];
+                    axis_host_tx_metadata.data[26:3]    <= lQPN[23:0];
+                    axis_host_tx_metadata.data[74:27]   <= 48'h000000000100;//lAddr[47:0];
                     axis_host_tx_metadata.data[122:75]  <= 48'h000000000000;//rAddr[47:0];
                     axis_host_tx_metadata.data[154:123] <= len[31:0];
                     axis_host_tx_metadata.valid         <= 1'b1;
@@ -563,7 +502,7 @@ begin
                     axis_host_tx_metadata.valid     <= 1'b0;
                 end
                 wait_counter <= wait_counter + 1;
-                if (wait_counter == INTERVAL_TIMER) begin
+                if (wait_counter[11:0] == debug[15:4]) begin
                     writeState                      <= WRITE_IDLE;
                     wait_counter <= 0;
                     write_done                      <= 1;
@@ -877,8 +816,11 @@ ila_stack_top inst_ila_stack_top (
     .probe10(writeState),//8
     .probe11(m_axis_roce_read_cmd.valid),
     .probe12(m_axis_roce_read_cmd.ready),
-    .probe13(m_axis_roce_write_cmd.valid),
-    .probe14(m_axis_roce_write_cmd.ready)    
+    .probe13(m_axis_roce_read_cmd.data),//96
+    .probe14(m_axis_roce_write_cmd.valid),
+    .probe15(m_axis_roce_write_cmd.ready),
+    .probe16(m_axis_roce_write_cmd.data),//96
+    .probe17(net_aresetn)
 );
 
 ila_stack_top_inter inst_ila_stack_top_inter (

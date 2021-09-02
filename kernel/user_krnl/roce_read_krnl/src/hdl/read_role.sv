@@ -2,7 +2,7 @@
 //////////////////////////////////////////////////////////////////////////////// 
 // default_nettype of none prevents implicit wire declaration.
 `default_nettype none
-module dummy_role #(
+module read_role #(
   parameter integer C_M_AXIS_TX_META_TDATA_WIDTH   = 256,
   parameter integer C_M_AXIS_TX_DATA_TDATA_WIDTH   = 512,
   parameter integer C_S_AXIS_TX_STATUS_TDATA_WIDTH = 512
@@ -109,34 +109,86 @@ assign ap_done = &ap_done_r;
 assign ap_ready = ap_done;
 
 
-// dummy logic
-localparam WAIT_TIMER = 250000000;
+// read logic
+localparam TIMER_1S = 250000000; //1s
 reg [31:0] cnt;
-assign m_axis_tx_meta_tvalid = 1'b0;
-assign m_axis_tx_meta_tdata  = '0;
-assign m_axis_tx_meta_tkeep  = '0;
-assign m_axis_tx_meta_tlast  = '0;
 
 assign m_axis_tx_data_tvalid = 1'b0;
 assign m_axis_tx_data_tdata  = '0;
 assign m_axis_tx_data_tkeep  = '0;
 assign m_axis_tx_data_tlast  = '0;
 
-assign s_axis_tx_status_tready = 1'b0;
+assign m_axis_tx_meta_tlast  = '1;
+assign m_axis_tx_meta_tkeep  = '1;
 
+assign s_axis_tx_status_tready = 1'b1;
+
+// done logic, run debug[31:29] seconds (0-7s)
 always @(posedge ap_clk) begin
   if (areset) begin
     cnt <= '0;
   end
   else begin
-    cnt <= cnt + 1;
-    if (cnt == WAIT_TIMER) begin
-      ap_done_i[0] <= 1b'1;
-      cnt <= '0;
+    if (!ap_done) begin
+      cnt <= cnt + 1;
+      if (cnt == TIMER_1S * debug[31:29]) begin
+        ap_done_i[0] <= 1'b1;
+        cnt <= '0;
+      end
     end
   end
 end
 
 
-endmodule : dummy_role
+reg [47:0] offset;
+reg [3:0] state;
+localparam IDLE_STATE = 0;
+localparam WRITE_META = 1;
+localparam WAIT_READY = 2;
+reg [C_M_AXIS_TX_META_TDATA_WIDTH-1:0] tx_meta_tdata;
+reg [C_M_AXIS_TX_META_TDATA_WIDTH/8-1:0] tx_meta_tvalid;
+assign m_axis_tx_meta_tdata = tx_meta_tdata;
+assign m_axis_tx_meta_tvalid = tx_meta_tvalid;
+
+always @(posedge ap_clk) begin
+  if (areset) begin
+    tx_meta_tdata <= '0;
+    tx_meta_tvalid <= '0;
+    offset <= '0;
+    state <= WRITE_META;
+  end
+  else begin
+    case (state)
+      WRITE_META: begin
+        if (ap_done) begin
+          state                       <= IDLE_STATE;
+        end else begin
+          tx_meta_tdata[2:0]     <= 0; // RDMA READ
+          tx_meta_tdata[26:3]    <= debug[23:0]; // lQPN: TODO: currently use debug[23:0] as lQPN
+          tx_meta_tdata[74:27]   <= offset;//lAddr[47:0];
+          tx_meta_tdata[122:75]  <= 48'h000000000000;//rAddr[47:0];
+          tx_meta_tdata[154:123] <= 2 << debug[28:24]; // len: use 2^debug[28:24] as len (<=2^31)
+          tx_meta_tvalid         <= 1'b1;
+          state                         <= WAIT_READY;
+        end
+      end
+      WAIT_READY: begin
+        if (m_axis_tx_meta_tvalid && m_axis_tx_meta_tready) begin
+          tx_meta_tvalid       <= 1'b0;
+          state                       <= WRITE_META;
+          offset                      <= offset + (2 << debug[28:24]);
+        end
+      end
+      IDLE_STATE: begin
+        state <= IDLE_STATE;
+      end
+      default: begin
+        state <= IDLE_STATE;
+      end
+    endcase
+  end
+end
+
+
+endmodule : read_role
 `default_nettype wire

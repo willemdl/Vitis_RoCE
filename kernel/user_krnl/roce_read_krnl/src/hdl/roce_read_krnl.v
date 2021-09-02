@@ -4,7 +4,7 @@
 `default_nettype none
 `timescale 1 ns / 1 ps
 // Top level of the kernel. Do not modify module name, parameters or ports.
-module roce_dummy_krnl #(
+module roce_read_krnl #(
   parameter integer C_S_AXI_CONTROL_ADDR_WIDTH     = 12 ,
   parameter integer C_S_AXI_CONTROL_DATA_WIDTH     = 32 ,
   parameter integer C_M_AXIS_TX_META_TDATA_WIDTH   = 256,
@@ -106,7 +106,7 @@ end
 
 
 // AXI4-Lite slave interface
-roce_dummy_krnl_control_s_axi #(
+roce_read_krnl_control_s_axi #(
   .C_S_AXI_ADDR_WIDTH ( C_S_AXI_CONTROL_ADDR_WIDTH ),
   .C_S_AXI_DATA_WIDTH ( C_S_AXI_CONTROL_DATA_WIDTH )
 )
@@ -144,12 +144,12 @@ inst_control_s_axi (
 ///////////////////////////////////////////////////////////////////////////////
 
 // Example RTL block.  Remove to insert custom logic.
-dummy_role #(
+read_role #(
   .C_M_AXIS_TX_META_TDATA_WIDTH   ( C_M_AXIS_TX_META_TDATA_WIDTH   ),
   .C_M_AXIS_TX_DATA_TDATA_WIDTH   ( C_M_AXIS_TX_DATA_TDATA_WIDTH   ),
   .C_S_AXIS_TX_STATUS_TDATA_WIDTH ( C_S_AXIS_TX_STATUS_TDATA_WIDTH )
 )
-inst_dummy_role (
+inst_read_role (
   .ap_clk                  ( ap_clk                  ),
   .ap_rst_n                ( ap_rst_n                ),
   .m_axis_tx_meta_tvalid   ( m_axis_tx_meta_tvalid   ),

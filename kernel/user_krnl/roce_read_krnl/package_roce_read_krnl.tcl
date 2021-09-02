@@ -45,11 +45,11 @@
 # PART OF THIS FILE AT ALL TIMES.
 # 
 # *******************************************************************************/
-set path_to_hdl "./kernel/user_krnl/roce_dummy_krnl/src"
+set path_to_hdl "./kernel/user_krnl/roce_read_krnl/src"
 set path_to_packaged "./packaged_kernel_${suffix}"
 set path_to_tmp_project "./tmp_kernel_pack_${suffix}"
 set path_to_common "./kernel/common"
-set path_to_pack_tcl "./kernel/user_krnl/roce_dummy_krnl"
+set path_to_pack_tcl "./kernel/user_krnl/roce_read_krnl"
 
 set words [split $device "_"]
 set board [lindex $words 1]

@@ -122,7 +122,7 @@ assign m_axis_tx_data_tdata  = '0;
 assign m_axis_tx_data_tkeep  = '0;
 assign m_axis_tx_data_tlast  = '0;
 
-assign s_axis_tx_status_tready = 1'b0;
+assign s_axis_tx_status_tready = 1'b1;
 
 always @(posedge ap_clk) begin
   if (areset) begin

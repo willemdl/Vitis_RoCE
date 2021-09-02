@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <root versionMajor="1" versionMinor="6">
-  <kernel name="roce_dummy_krnl" language="ip_c" vlnv="mycompany.com:kernel:roce_dummy_krnl:1.0" attributes="" preferredWorkGroupSizeMultiple="0" workGroupSize="1" interrupt="true" hwControlProtocol="ap_ctrl_hs">
+  <kernel name="roce_read_krnl" language="ip_c" vlnv="mycompany.com:kernel:roce_read_krnl:1.0" attributes="" preferredWorkGroupSizeMultiple="0" workGroupSize="1" interrupt="true" hwControlProtocol="ap_ctrl_hs">
     <ports>
       <port name="s_axi_control" mode="slave" range="0x1000" dataWidth="32" portType="addressable" base="0x0"/>
       <port name="m_axis_tx_meta" mode="write_only" dataWidth="256" portType="stream"/>

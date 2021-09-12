@@ -111,7 +111,7 @@ int main(int argc, char **argv) {
     uint32_t rQPN = 0x00100000;
     uint32_t lQPN = 0x00000000;
     uint32_t rIP  = 0x0b01d4e1;
-    uint32_t lIP  = 0x0b01d4e2;
+    uint32_t lIP  = 0x0b01d4e0;
     uint32_t rUDP = 0x000012b7;
     uint64_t vAddr= 0x0000000000000001;
     uint32_t rKey = 0x00000000;
@@ -120,9 +120,9 @@ int main(int argc, char **argv) {
     uint64_t lAddr= 0x0000000000000000;
     uint32_t len  = 0x00000100;
     // [15:4] time interval in cycle       0x100   256cycle
-    // [3:2]  board number                 1
+    // [3:2]  board number                 0
     // [1:0]  mode 0-nothing 1-test 2-op   0
-    uint32_t debug= 0x00001004;
+    uint32_t debug= 0x00001000;
 
     uint32_t debug1= 0x00000000;
     

@@ -125,7 +125,7 @@ assign s_axis_tx_status_tready = 1'b1;
 
 // done logic, run debug[31:29] seconds (0-7s)
 always @(posedge ap_clk) begin
-  if (areset) begin
+  if (ap_start_pulse) begin
     cnt <= '0;
   end
   else begin
@@ -146,7 +146,7 @@ localparam IDLE_STATE = 0;
 localparam WRITE_META = 1;
 localparam WAIT_READY = 2;
 reg [C_M_AXIS_TX_META_TDATA_WIDTH-1:0] tx_meta_tdata;
-reg [C_M_AXIS_TX_META_TDATA_WIDTH/8-1:0] tx_meta_tvalid;
+reg tx_meta_tvalid;
 assign m_axis_tx_meta_tdata = tx_meta_tdata;
 assign m_axis_tx_meta_tvalid = tx_meta_tvalid;
 
@@ -180,15 +180,35 @@ always @(posedge ap_clk) begin
         end
       end
       IDLE_STATE: begin
-        state <= IDLE_STATE;
+	if (ap_start) begin
+          state <= WRITE_META;
+	end else begin
+          state <= IDLE_STATE;
+	end
       end
       default: begin
-        state <= IDLE_STATE;
+	if (ap_start) begin
+          state <= WRITE_META;
+	end else begin
+          state <= IDLE_STATE;
+	end
       end
     endcase
   end
 end
 
+ila_roce_read inst_ila_roce_read (
+    .clk(ap_clk),
+    .probe0(tx_meta_tdata),//256
+    .probe1(tx_meta_tvalid),
+    .probe2(m_axis_tx_meta_tready),
+    .probe3(m_axis_tx_meta_tkeep),//256/8
+    .probe4(m_axis_tx_meta_tlast),
+    .probe5(state),//4
+    .probe6(offset),//48
+    .probe7(debug),//32
+    .probe8(cnt)//32
+);
 
 endmodule : read_role
 `default_nettype wire

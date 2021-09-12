@@ -75,6 +75,7 @@ lappend __ip_list ./build/fpga-network-stack/iprepo
 set_property ip_repo_paths $__ip_list [current_project]
 update_ip_catalog
 
+source $path_to_pack_tcl/roce_read.tcl
 
 update_compile_order -fileset sources_1
 update_compile_order -fileset sim_1

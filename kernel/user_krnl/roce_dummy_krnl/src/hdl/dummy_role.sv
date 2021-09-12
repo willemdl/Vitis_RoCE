@@ -103,7 +103,7 @@ always @(posedge ap_clk) begin
   end
 end
 
-assign ap_done = &ap_done_r;
+assign ap_done = ap_done_n;
 
 // Ready Logic (non-pipelined case)
 assign ap_ready = ap_done;
@@ -112,6 +112,8 @@ assign ap_ready = ap_done;
 // dummy logic
 localparam WAIT_TIMER = 250000000;
 reg [31:0] cnt;
+reg ap_done_n;
+
 assign m_axis_tx_meta_tvalid = 1'b0;
 assign m_axis_tx_meta_tdata  = '0;
 assign m_axis_tx_meta_tkeep  = '0;
@@ -127,16 +129,18 @@ assign s_axis_tx_status_tready = 1'b1;
 always @(posedge ap_clk) begin
   if (areset) begin
     cnt <= '0;
+    ap_done_n <= 1'b0;
   end
   else begin
-    cnt <= cnt + 1;
+    ap_done_n <= 1'b0;
     if (cnt == WAIT_TIMER) begin
-      ap_done_i[0] <= 1'b1;
+      ap_done_n <= 1'b1;
       cnt <= '0;
+    end else if (ap_start) begin
+      cnt <= cnt + 1'b1;
     end
   end
 end
-
 
 endmodule : dummy_role
 `default_nettype wire

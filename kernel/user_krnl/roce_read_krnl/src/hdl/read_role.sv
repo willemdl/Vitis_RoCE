@@ -103,15 +103,16 @@ always @(posedge ap_clk) begin
   end
 end
 
-assign ap_done = &ap_done_r;
+assign ap_done = ap_done_n;
 
 // Ready Logic (non-pipelined case)
 assign ap_ready = ap_done;
 
 
 // read logic
-localparam TIMER_1S = 250000000; //1s
+localparam TIMER_1S = 250; //1s
 reg [31:0] cnt;
+reg ap_done_n;
 
 assign m_axis_tx_data_tvalid = 1'b0;
 assign m_axis_tx_data_tdata  = '0;
@@ -125,16 +126,17 @@ assign s_axis_tx_status_tready = 1'b1;
 
 // done logic, run debug[31:29] seconds (0-7s)
 always @(posedge ap_clk) begin
-  if (ap_start_pulse) begin
+  if (areset) begin
     cnt <= '0;
+    ap_done_n <= 1'b0;
   end
   else begin
-    if (!ap_done) begin
-      cnt <= cnt + 1;
-      if (cnt == TIMER_1S * debug[31:29]) begin
-        ap_done_i[0] <= 1'b1;
-        cnt <= '0;
-      end
+    ap_done_n <= 1'b0;
+    if (cnt == TIMER_1S * debug[31:29]) begin
+      ap_done_n <= 1'b1;
+      cnt <= '0;
+    end else if (ap_start) begin
+      cnt <= cnt + 1'b1;
     end
   end
 end
@@ -151,13 +153,13 @@ assign m_axis_tx_meta_tdata = tx_meta_tdata;
 assign m_axis_tx_meta_tvalid = tx_meta_tvalid;
 
 always @(posedge ap_clk) begin
-  if (areset) begin
+  if (areset|ap_start_pulse) begin
     tx_meta_tdata <= '0;
     tx_meta_tvalid <= '0;
     offset <= '0;
     state <= WRITE_META;
   end
-  else begin
+  else if (ap_start) begin
     case (state)
       WRITE_META: begin
         if (ap_done) begin
@@ -197,18 +199,18 @@ always @(posedge ap_clk) begin
   end
 end
 
-ila_roce_read inst_ila_roce_read (
-    .clk(ap_clk),
-    .probe0(tx_meta_tdata),//256
-    .probe1(tx_meta_tvalid),
-    .probe2(m_axis_tx_meta_tready),
-    .probe3(m_axis_tx_meta_tkeep),//256/8
-    .probe4(m_axis_tx_meta_tlast),
-    .probe5(state),//4
-    .probe6(offset),//48
-    .probe7(debug),//32
-    .probe8(cnt)//32
-);
+//ila_roce_read inst_ila_roce_read (
+//    .clk(ap_clk),
+//    .probe0(tx_meta_tdata),//256
+//    .probe1(tx_meta_tvalid),
+//    .probe2(m_axis_tx_meta_tready),
+//    .probe3(m_axis_tx_meta_tkeep),//256/8
+//    .probe4(m_axis_tx_meta_tlast),
+//    .probe5(state),//4
+//    .probe6(offset),//48
+//    .probe7(debug),//32
+//    .probe8(cnt)//32
+//);
 
 endmodule : read_role
 `default_nettype wire

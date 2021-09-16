@@ -231,7 +231,7 @@ end
 assign ap_idle = ap_idle_r;
 
 // Done logic
-localparam [31:0] TIMER = 3750000000; //15s
+localparam [31:0] TIMER = 500000000; //2s
 reg [31:0] run_counter;
 reg         ap_done_n;
 always @ (posedge net_clk ) begin
@@ -374,7 +374,7 @@ reg[31:0] wait_counter = 0;
 
 always @(posedge net_clk)
 begin
-    if (~net_aresetn) begin
+    if (~net_aresetn | ap_start_pulse) begin
         axis_qp_interface.valid     <= 1'b0;
         axis_qp_interface.data      <= 0;
         axis_qp_conn_interface.valid <= 1'b0;

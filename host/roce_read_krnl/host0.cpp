@@ -124,10 +124,10 @@ int main(int argc, char **argv) {
     // [1:0]  mode 0-nothing 1-test 2-op   0
     uint32_t debug= 0x00001000;
 
-    // [31:29] run time in second  b101     5s
-    // [28:24] len in 2^           b01010   2^10=1kB
+    // [31:29] meta count          b 110     2^6=64
+    // [28:24] len in 2^           b 10000   2^16=64kB
     // [23:0]  lQPN                0x000000
-    uint32_t debug1= 0xaa000000;
+    uint32_t debug1= 0xd0000000;
     
     // Set network kernel arguments
     OCL_CHECK(err, err = network_kernel.setArg(0, rPSN)); // Default IP address

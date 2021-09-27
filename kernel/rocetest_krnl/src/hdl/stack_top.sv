@@ -266,6 +266,25 @@ assign ap_done = ap_done_n;
 // Ready Logic (non-pipelined case)
 assign ap_ready = ap_done;
 
+// timer logic for bandwidth/delay calculation
+localparam [31:0] TIMER_1S = 250000000; //1s
+reg [31:0] cyc_counter;
+reg [31:0] sec_counter;
+always @ (posedge net_clk ) begin
+  if (areset) begin
+    cyc_counter <= '0;
+    sec_counter <= '0;
+  end
+  else begin;
+    if (cyc_counter == TIMER_1S) begin
+      cyc_counter <= '0;
+      sec_counter <= sec_counter + 1'b1;
+    end
+    else begin
+      cyc_counter <= cyc_counter + 1'b1;
+    end
+  end
+end
 
 /*
  * Set IP address
@@ -820,7 +839,15 @@ ila_stack_top inst_ila_stack_top (
     .probe14(m_axis_roce_write_cmd.valid),
     .probe15(m_axis_roce_write_cmd.ready),
     .probe16(m_axis_roce_write_cmd.data),//96
-    .probe17(net_aresetn)
+    .probe17(net_aresetn),
+    .probe18(cyc_counter),//32
+    .probe19(sec_counter),//32
+    .probe20(s_axis_roce_read_data.valid),
+    .probe21(s_axis_roce_read_data.ready),
+    .probe22(s_axis_roce_read_data.data),//512
+    .probe23(m_axis_roce_write_data.valid),
+    .probe24(m_axis_roce_write_data.ready),
+    .probe25(m_axis_roce_write_data.data)//512
 );
 
 ila_stack_top_inter inst_ila_stack_top_inter (
@@ -850,7 +877,21 @@ ila_stack_top_inter inst_ila_stack_top_inter (
     .probe22(regCrcDropPkgCount),//32
     .probe23(regCrcDropPkgCount_valid),
     .probe24(regInvalidPsnDropCount),//32
-    .probe25(regInvalidPsnDropCount_valid)
+    .probe25(regInvalidPsnDropCount_valid),
+    .probe26(cyc_counter),//32
+    .probe27(sec_counter),//32
+    .probe28(m_axis_roce_read_cmd.valid),
+    .probe29(m_axis_roce_read_cmd.ready),
+    .probe30(m_axis_roce_read_cmd.data),//96
+    .probe31(m_axis_roce_write_cmd.valid),
+    .probe32(m_axis_roce_write_cmd.ready),
+    .probe33(m_axis_roce_write_cmd.data),//96
+    .probe34(s_axis_roce_read_data.valid),
+    .probe35(s_axis_roce_read_data.ready),
+    .probe36(s_axis_roce_read_data.data),//512
+    .probe37(m_axis_roce_write_data.valid),
+    .probe38(m_axis_roce_write_data.ready),
+    .probe39(m_axis_roce_write_data.data)//512
 );
 
 /*

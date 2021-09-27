@@ -148,7 +148,7 @@ write_role #(
   .C_M_AXIS_TX_DATA_TDATA_WIDTH   ( C_M_AXIS_TX_DATA_TDATA_WIDTH   ),
   .C_S_AXIS_TX_STATUS_TDATA_WIDTH ( C_S_AXIS_TX_STATUS_TDATA_WIDTH )
 )
-inst_read_role (
+inst_write_role (
   .ap_clk                  ( ap_clk                  ),
   .ap_rst_n                ( ap_rst_n                ),
   .m_axis_tx_meta_tvalid   ( m_axis_tx_meta_tvalid   ),

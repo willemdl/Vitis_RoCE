@@ -204,18 +204,18 @@ always @(posedge ap_clk) begin
   end
 end
 
-//ila_roce_read inst_ila_roce_read (
-//    .clk(ap_clk),
-//    .probe0(tx_meta_tdata),//256
-//    .probe1(tx_meta_tvalid),
-//    .probe2(m_axis_tx_meta_tready),
-//    .probe3(m_axis_tx_meta_tkeep),//256/8
-//    .probe4(m_axis_tx_meta_tlast),
-//    .probe5(state),//4
-//    .probe6(offset),//48
-//    .probe7(debug),//32
-//    .probe8(cnt)//32
-//);
+ila_roce_write inst_ila_roce_write (
+    .clk(ap_clk),
+    .probe0(tx_meta_tdata),//256
+    .probe1(tx_meta_tvalid),
+    .probe2(m_axis_tx_meta_tready),
+    .probe3(m_axis_tx_meta_tkeep),//256/8
+    .probe4(m_axis_tx_meta_tlast),
+    .probe5(state),//4
+    .probe6(offset),//48
+    .probe7(debug),//32
+    .probe8(cnt)//32
+);
 
 endmodule : write_role
 `default_nettype wire

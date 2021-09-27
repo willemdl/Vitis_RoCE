@@ -129,6 +129,15 @@ int main(int argc, char **argv) {
     // [23:0]  lQPN                0x000000
     uint32_t debug1= 0xd0000000;
     
+    if (argc >=3) {
+	debug1 = (debug1 & 0x00FFFFFF) |((uint32_t)strtoul(argv[2], NULL, 0) << 24);
+    }
+    uint32_t meta = 1<<(debug1>>29);
+    uint32_t length = 1<<((debug1>>24) & 0x1F);
+    printf("meta count      = %d\n", meta);
+    printf("length in bytes = %d\n", length);
+    printf("total data read = %d\n\n", meta*length);
+
     // Set network kernel arguments
     OCL_CHECK(err, err = network_kernel.setArg(0, rPSN)); // Default IP address
     OCL_CHECK(err, err = network_kernel.setArg(1, lPSN)); // Board number

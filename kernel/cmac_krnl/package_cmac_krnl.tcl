@@ -50,15 +50,17 @@ set path_to_packaged "./packaged_kernel_${suffix}"
 set path_to_tmp_project "./tmp_kernel_pack_${suffix}"
 set path_to_common "./kernel/common"
 
-set words [split $device "_"]
-set board [lindex $words 1]
+# set words [split $device "_"]
+# set board [lindex $words 1]
+# 
+# if {[string compare -nocase $board "u280"] == 0} {
+# set projPart "xcu280-fsvh2892-2L-e"
+# } else {
+#     puts "Unknown board $board"
+#     exit 
+# }
 
-if {[string compare -nocase $board "u280"] == 0} {
-set projPart "xcu280-fsvh2892-2L-e"
-} else {
-    puts "Unknown board $board"
-    exit 
-}
+source $path_to_common/platform.tcl
 
 set projName kernel_pack
 create_project -force $projName $path_to_tmp_project -part $projPart
@@ -72,7 +74,9 @@ update_compile_order -fileset sources_1
 
 set __ip_list [get_property ip_repo_paths [current_project]]
 
-lappend __ip_list ./build/fpga-network-stack/iprepo
+# lappend __ip_list ./build/fpga-network-stack/iprepo
+set iprepopath $::env(IPREPOPATH)
+lappend __ip_list $iprepopath
 set_property ip_repo_paths $__ip_list [current_project]
 update_ip_catalog
 
@@ -85,7 +89,86 @@ set_property -dict [list CONFIG.TDATA_NUM_BYTES {64} CONFIG.FIFO_MODE {2} CONFIG
 create_ip -name ethernet_frame_padding_512 -vendor ethz.systems.fpga -library hls -version 0.1 -module_name ethernet_frame_padding_512_ip 
 
 create_ip -name cmac_usplus -vendor xilinx.com -library ip  -module_name cmac_usplus_axis
-set_property -dict [list CONFIG.CMAC_CAUI4_MODE {1} CONFIG.NUM_LANES {4x25} CONFIG.GT_REF_CLK_FREQ {156.25} CONFIG.USER_INTERFACE {AXIS} CONFIG.GT_DRP_CLK {50} CONFIG.TX_FLOW_CONTROL {0} CONFIG.RX_FLOW_CONTROL {0} CONFIG.CMAC_CORE_SELECT {CMACE4_X0Y6} CONFIG.GT_GROUP_SELECT {X0Y44~X0Y47} CONFIG.LANE1_GT_LOC {X0Y44} CONFIG.LANE2_GT_LOC {X0Y45} CONFIG.LANE3_GT_LOC {X0Y46} CONFIG.LANE4_GT_LOC {X0Y47} CONFIG.Component_Name {cmac_usplus_axis} ] [get_ips cmac_usplus_axis]
+# set_property -dict [list CONFIG.CMAC_CAUI4_MODE {1} CONFIG.NUM_LANES {4x25} CONFIG.GT_REF_CLK_FREQ {156.25} CONFIG.USER_INTERFACE {AXIS} CONFIG.GT_DRP_CLK {50} CONFIG.TX_FLOW_CONTROL {0} CONFIG.RX_FLOW_CONTROL {0} CONFIG.CMAC_CORE_SELECT {CMACE4_X0Y6} CONFIG.GT_GROUP_SELECT {X0Y44~X0Y47} CONFIG.LANE1_GT_LOC {X0Y44} CONFIG.LANE2_GT_LOC {X0Y45} CONFIG.LANE3_GT_LOC {X0Y46} CONFIG.LANE4_GT_LOC {X0Y47} CONFIG.Component_Name {cmac_usplus_axis} ] [get_ips cmac_usplus_axis]
+## CMAC IP 
+# Default GT reference frequency
+set gt_ref_clk 156.25
+set freerunningclock 100
+set interface 0
+puts "projPart is ${projPart}"
+if {${projPart} eq "xcu50-fsvh2104-2L-e"} {
+  # Possible core_selection CMACE4_X0Y3 and CMACE4_X0Y4
+  set gt_ref_clk 161.1328125
+  set core_selection  CMACE4_X0Y3
+  set group_selection X0Y28~X0Y31
+  set interface_number 0
+} elseif {${projPart} eq "xcu55c-fsvh2892-2L-e"} {
+  set gt_ref_clk 161.1328125
+  switch ${interface} {
+    "1" {
+      # Possible core_selection CMACE4_X0Y3 and CMACE4_X0Y4
+      set core_selection  CMACE4_X0Y4
+      set group_selection X0Y28~X0Y31
+      set interface_number 1
+    }
+    default {
+      # Possible core_selection CMACE4_X0Y2; CMACE4_X0Y3; CMACE4_X0Y4
+      set core_selection  CMACE4_X0Y2
+      set group_selection X0Y24~X0Y27
+      set interface_number 0
+    }
+  }
+} elseif {${projPart} eq "xcu200-fsgd2104-2-e"} {
+  switch ${interface} {
+    "1" {
+      # Possible core_selection CMACE4_X0Y6 and CMACE4_X0Y7
+      set core_selection  CMACE4_X0Y6
+      set group_selection X1Y44~X1Y47
+      set interface_number 1
+    }
+    default {
+      # Possible core_selection CMACE4_X0Y6; CMACE4_X0Y7 and CMACE4_X0Y8
+      set core_selection  CMACE4_X0Y8
+      set group_selection X1Y48~X1Y51
+      set interface_number 0
+    }
+  }
+} elseif {${projPart} eq "xcu250-figd2104-2L-e"} {
+  switch ${interface} {
+    "1" {
+      # Possible core_selection CMACE4_X0Y6; CMACE4_X0Y7 and CMACE4_X0Y8
+      set core_selection  CMACE4_X0Y6
+      set group_selection X1Y40~X1Y43
+      set interface_number 1
+    }
+    default {
+      # Possible core_selection CMACE4_X0Y7 and CMACE4_X0Y8
+      set core_selection  CMACE4_X0Y7
+      set group_selection X1Y44~X1Y47
+      set interface_number 0
+    }
+  }
+} elseif {${projPart} eq "xcu280-fsvh2892-2L-e"} {
+  set freerunningclock 50
+  switch ${interface} {
+    "1" {
+      # Possible core_selection CMACE4_X0Y6 and CMACE4_X0Y7
+      set core_selection  CMACE4_X0Y6
+      set group_selection X0Y44~X0Y47
+      set interface_number 1
+    }
+    default {
+      # Possible core_selection CMACE4_X0Y5; CMACE4_X0Y6 and CMACE4_X0Y7
+      set core_selection  CMACE4_X0Y5
+      set group_selection X0Y40~X0Y43
+      set interface_number 0
+    }
+  }
+} else {
+  puts "unknown part"
+  return -1
+}
+set_property -dict [list CONFIG.CMAC_CAUI4_MODE {1} CONFIG.NUM_LANES {4x25} CONFIG.GT_REF_CLK_FREQ ${gt_ref_clk} CONFIG.USER_INTERFACE {AXIS} CONFIG.GT_DRP_CLK ${freerunningclock} CONFIG.TX_FLOW_CONTROL {0} CONFIG.RX_FLOW_CONTROL {0} CONFIG.CMAC_CORE_SELECT ${core_selection} CONFIG.GT_GROUP_SELECT ${group_selection} CONFIG.Component_Name {cmac_usplus_axis} ] [get_ips cmac_usplus_axis]
 
 ## Crossings
 create_ip -name axis_data_fifo -vendor xilinx.com -library ip -module_name axis_data_fifo_cc_udp_data

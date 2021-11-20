@@ -51,15 +51,16 @@ set path_to_tmp_project "./tmp_kernel_pack_${suffix}"
 set path_to_common "./kernel/common"
 set path_to_pack_tcl "./kernel/user_krnl/roce_dummy_krnl"
 
-set words [split $device "_"]
-set board [lindex $words 1]
-
-if {[string compare -nocase $board "u280"] == 0} {
-set projPart "xcu280-fsvh2892-2L-e"
-} else {
-    puts "Unknown board $board"
-    exit 
-}
+# set words [split $device "_"]
+# set board [lindex $words 1]
+# 
+# if {[string compare -nocase $board "u280"] == 0} {
+# set projPart "xcu280-fsvh2892-2L-e"
+# } else {
+#     puts "Unknown board $board"
+#     exit 
+# }
+source $path_to_common/platform.tcl
 
 set projName kernel_pack
 create_project -force $projName $path_to_tmp_project -part $projPart
@@ -71,7 +72,9 @@ set_property top network_krnl [current_fileset]
 update_compile_order -fileset sources_1
 
 set __ip_list [get_property ip_repo_paths [current_project]]
-lappend __ip_list ./build/fpga-network-stack/iprepo
+# lappend __ip_list ./build/fpga-network-stack/iprepo
+set iprepopath $::env(IPREPOPATH)
+lappend __ip_list $iprepopath
 set_property ip_repo_paths $__ip_list [current_project]
 update_ip_catalog
 

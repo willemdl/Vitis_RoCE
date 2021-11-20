@@ -1,6 +1,5 @@
 # build folders
-build/
-build_*/
+build*/
 tmp*/
 packaged_*/
 _x*/
@@ -14,6 +13,7 @@ kernel/common/types/network_types.svh
 
 # other folders
 bins/
+iprepo*/
 .ipcache/
 .vscode/
 workspace.*

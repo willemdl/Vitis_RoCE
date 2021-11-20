@@ -69,6 +69,7 @@ POSTSYSLINKTCL ?= $(shell readlink -f ./scripts/post_sys_link.tcl)
 CONFIGLINKTCL ?= $(shell readlink -f ./scripts/compile.cfg)
 
 IPREPOPATH ?= ./build/fpga-network-stack/iprepo
+$(info INFO: IPREPOPATH is [${IPREPOPATH}])
 
 XSA := $(call device2xsa, $(DEVICE))
 TEMP_DIR := ./_x.$(TARGET).$(XSA)
@@ -157,7 +158,7 @@ exe: $(EXECUTABLE)
 
 .PHONY: build
 build: $(BINARY_CONTAINERS)
-
+export IPREPOPATH
 # Building kernel
 $(BUILD_DIR)/${XCLBIN_NAME}.xclbin: $(BINARY_CONTAINER_OBJS)
 	mkdir -p $(BUILD_DIR)
